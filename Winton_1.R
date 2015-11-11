@@ -27,6 +27,7 @@ ggplot(train.full) + geom_histogram(aes(Ret_MinusOne), binwidth=.01)
 
 summary(train.full$Ret_MinusTwo)
 summary(train.full$Ret_MinusOne)
+summary(train.full$Weight_Daily)
 
 train.full %>%
   mutate(na.var = ifelse(is.na(Ret_PlusOne), 1, 0)) %>%
@@ -36,6 +37,11 @@ train.full %>%
   mutate(na.var = ifelse(is.na(Feature_2), 1, 0)) %>%
   count(na.var)
 
+train.full %>%
+  mutate(na.var = ifelse(is.na(Weight_Daily), 1, 0)) %>%
+  count(na.var)
+
+ggplot(train.full) + geom_histogram(aes(Weight_Daily))
 
 ggplot(train.full) + geom_histogram(aes(Feature_2), binwidth=.01)
 ggplot(train.full) + geom_histogram(aes(Feature_3), binwidth=.01)
@@ -140,6 +146,10 @@ f.cor <- cor(features, use="pairwise.complete.obs")
 f.cor <- apply(f.cor, 2, function (x) ifelse(x==1,0,x))
 f.cor.max <- apply(f.cor, 1, max)
 
+plot(density(rnorm(1000,0,2)))
+plot(density(rnorm(1000,0,10)))
+plot(density(rcauchy(1000,0,2)))
+
 train_y2 <- train.full %>%
   filter(!is.na(Feature_2), !is.na(Feature_3)) %>%
   sample_n(5000)
@@ -150,7 +160,8 @@ dat <- list('N' = dim(train_y2)[[1]],
             'covar2' = train_y2$Feature_3,
             "y_m2" = train_y2$Ret_MinusTwo,
             "y_m1" = train_y2$Ret_MinusOne,
-            'y' = train_y2$Ret_PlusOne)
+            'y' = train_y2$Ret_PlusOne,
+            'weights' = train_y2$Weight_Daily)
 
 fit <- stan('stan_model_3.stan',  
             model_name = "Stan1", 
@@ -158,5 +169,5 @@ fit <- stan('stan_model_3.stan',
             thin=2, chains=4, seed=252014,
             data = dat)
 
-print(fit, pars=c("beta", "theta"), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("beta", "theta"))
+print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("beta", "theta", 'sigma'))

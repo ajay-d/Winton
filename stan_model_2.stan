@@ -43,6 +43,12 @@ model {
   
   // likelihood
   epsilon ~ normal(0,sigma);
-
+  
+  //p33
+  //exp(epsilon) ~ normal(0,sigma);
+  //increment_log_prob(epsilon);
+  
+  //p268
+  //increment_log_prob(normal_log(epsilon, 0, sigma));
 
 }

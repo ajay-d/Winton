@@ -22,8 +22,8 @@ parameters {
   vector [2] beta;
   
   //moving average
-  //simplex[2] theta;
-  vector[2] theta;
+  simplex[2] theta;
+  //vector[2] theta;
   
   real<lower=0> sigma;
 }

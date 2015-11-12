@@ -17,23 +17,31 @@ parameters {
   //vector [N] alpha;
   real alpha;
   
-  vector[N] epsilon;
-  
   //regression
   vector [25] beta;
   
   //moving average
-  simplex[2] theta;
-  //vector[2] theta;
+  //simplex[2] theta;
+  //theta on error terms
+  vector[2] theta;
   
   real<lower=0> sigma;
 }
 transformed parameters{
   //matrix [N,2] covar;
   matrix [N,2] y_m;
+  vector [N] y_gr;
+  vector [N] y_m1_m2;
+  
+  //error terms
+  matrix [N,2] epsilon;
+  
+  //convert to growth rates
+  y_gr <- y + 1;
+  
+  epsilon <- append_col(y - y_m1, y - y_m2);
   
   //average return over two days
-  vector [N] y_m1_m2;
   y_m1_m2 <- (y_m1 + 1) .* (y_m2 + 1);
   for (n in 1:N)
     y_m1_m2[n] <- pow(y_m1_m2[n], .5) - 1;
@@ -50,26 +58,21 @@ model {
   vector[N] y_hat;
   //vector[N] epsilon;
   
-  y_hat <- alpha + covar * beta + y_m * theta;
-  epsilon <- (y - y_hat) .* weights;
+  y_hat <- alpha + covar * beta + (epsilon * theta).* weights;
+  //err <- (y - y_hat) .* weights;
   
   // priors
   alpha ~ normal(0,10);
   beta ~ normal(0,2);
   
-  theta ~ normal(cols(y_m),2);
+  theta ~ normal(1,2);
   
   //sigma ~ cauchy(0,5);
-  sigma ~ normal(0,.1);
+  sigma ~ normal(0,.1) T[0,];
   
   // likelihood
-  epsilon ~ normal(0,sigma);
+  //err ~ normal(0,sigma) T[0,];
   
-  //p33
-  //exp(epsilon) ~ normal(0,sigma);
-  //increment_log_prob(epsilon);
-  
-  //p268
-  //increment_log_prob(normal_log(epsilon, 0, sigma));
+  y ~ normal(y_hat, sigma);
   
 }

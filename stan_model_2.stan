@@ -39,7 +39,8 @@ model {
   
   theta ~ normal(0,2);
   
-  sigma ~ cauchy(0,5);
+  //sigma ~ cauchy(0,5);
+  sigma ~ normal(0,5);
   
   // likelihood
   epsilon ~ normal(0,sigma);

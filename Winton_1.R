@@ -105,10 +105,10 @@ fit <- stan(model_code = stan.model,
 
 
 b <- extract(fit, "beta1")$beta1
-print(fit, pars=c("beta1", "beta2", "theta1", "theta2"),
+print(fit, pars=c("beta1", "beta2", "theta1", "theta2", 'sigma'),
       probs=c(0.5, 0.75, 0.95))
 
-traceplot(fit, pars=c("beta1", "beta2", "theta1", "theta2"))
+traceplot(fit, pars=c("beta1", "beta2", "theta1", "theta2", 'sigma'))
 stan_dens(fit, pars=c("beta1", "beta2", "theta1", "theta2"), 
           fill="skyblue")
 
@@ -145,6 +145,10 @@ f.cor <- cor(features, use="pairwise.complete.obs")
 
 f.cor <- apply(f.cor, 2, function (x) ifelse(x==1,0,x))
 f.cor.max <- apply(f.cor, 1, max)
+
+rets <- train.full %>%
+  select(Ret_MinusTwo, Ret_MinusOne, Ret_PlusOne, Ret_PlusTwo)
+r.cor <- cor(rets, use="pairwise.complete.obs")
 
 plot(density(rnorm(1000,0,2)))
 plot(density(rnorm(1000,0,10)))

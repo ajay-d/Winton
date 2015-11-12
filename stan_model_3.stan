@@ -58,7 +58,8 @@ model {
   
   theta ~ normal(cols(y_m),2);
   
-  sigma ~ cauchy(0,2);
+  //sigma ~ cauchy(0,5);
+  sigma ~ normal(0,.1);
   
   // likelihood
   epsilon ~ normal(0,sigma);

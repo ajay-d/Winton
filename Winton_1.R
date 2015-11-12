@@ -155,9 +155,15 @@ plot(density(rnorm(1000,0,10)))
 plot(density(rcauchy(1000,0,2)))
 
 train_y2 <- train.full %>%
-  filter(!is.na(Feature_2), !is.na(Feature_3)) %>%
+  replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
+                  Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
+                  Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
+  #filter(!is.na(Feature_2), !is.na(Feature_3)) %>%
   sample_n(5000)
 
+features <- train_y2 %>%
+  select(matches("Feature")) %>%
+  as.matrix()
 
 dat <- list('N' = dim(train_y2)[[1]],
             'covar1' = train_y2$Feature_2,
@@ -168,6 +174,36 @@ dat <- list('N' = dim(train_y2)[[1]],
             'weights' = train_y2$Weight_Daily)
 
 fit <- stan('stan_model_3.stan',  
+            model_name = "Stan1", 
+            iter=1500, warmup=500,
+            thin=2, chains=4, seed=252014,
+            data = dat)
+
+print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("beta", "theta", 'sigma'))
+
+##############################
+#Add weights, impute values
+
+train_y2 <- train.full %>%
+  replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
+                  Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
+                  Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
+  #filter(!is.na(Feature_2), !is.na(Feature_3)) %>%
+  sample_n(5000)
+
+features <- train_y2 %>%
+  select(matches("Feature")) %>%
+  as.matrix()
+
+dat <- list('N' = dim(train_y2)[[1]],
+            'covar' = features,
+            "y_m2" = train_y2$Ret_MinusTwo,
+            "y_m1" = train_y2$Ret_MinusOne,
+            'y' = train_y2$Ret_PlusOne,
+            'weights' = train_y2$Weight_Daily)
+
+fit <- stan('stan_model_4.stan',  
             model_name = "Stan1", 
             iter=1500, warmup=500,
             thin=2, chains=4, seed=252014,

@@ -1,3 +1,5 @@
+rm(list=ls(all=TRUE))
+
 library(readr)
 library(dplyr)
 library(tidyr)
@@ -36,13 +38,37 @@ train.imp <- train.full %>%
          Feature_21 = Feature_21 %||% Feature_18)
 
 
-train_y2 <- train.full %>%
+train.sample <- train.imp %>%
   replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
                   Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
                   Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
-  #filter(!is.na(Feature_2), !is.na(Feature_3)) %>%
   sample_n(5000)
 
-train.imp %>%
-  mutate(na.var = ifelse(is.na(Feature_3), 1, 0)) %>%
+intra.ret <- train.sample %>%
+  select(Ret_2:Ret_120) %>%
+  as.matrix()
+
+features <- train.sample %>%
+  select(matches("Feature")) %>%
+  as.matrix()
+
+train.full %>%
+  mutate(na.var = ifelse(is.na(Ret_MinusTwo), 1, 0)) %>%
   count(na.var)
+
+dat <- list('N' = dim(train.sample)[[1]],
+            'covar' = features,
+            'intra_day_1' = intra.ret,
+            "y_m2" = train.sample$Ret_MinusTwo,
+            "y_m1" = train.sample$Ret_MinusOne,
+            'y' = train.sample$Ret_PlusOne,
+            'weights' = train.sample$Weight_Daily)
+
+fit <- stan('stan_model_5.stan',  
+            model_name = "Stan1", 
+            iter=1500, warmup=500,
+            thin=2, chains=4, seed=252014,
+            data = dat)
+
+print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("beta", "theta", 'sigma'))

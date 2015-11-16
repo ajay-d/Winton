@@ -53,9 +53,10 @@ transformed parameters{
     y_m1_m2[n] <- pow(y_m1_m2[n], .5) - 1;
   
   
-  //covar <- append_col(covar1, covar2);
-  y_m <- append_col(y_m1, y_m2);
-  //y_m <- append_col(y_m, y_m1_m2);
+  //Return history matrix is:
+  //Ret_MinusTwo, Ret_MinusTwo, Average over 1+2, Average of first half of intra-day
+  y_temp1 <- append_col(y_m2, y_m1);
+  y_temp2 <- append_col(y_temp1, y_m1_m2);
   
   //print("cols in y=", cols(y_m));
   
@@ -72,7 +73,8 @@ transformed parameters{
   for (n in 1:N)
     y_intra[n] <- pow(y_intra[n], inv(119)) - 1;
     
-  y_m <- append_col(y_m, y_intra);
+  //y_m <- append_col(append_col(y_m1, y_m2), y_intra);
+  y_m <- append_col(y_temp2, y_intra);
   
 }
 
@@ -90,7 +92,7 @@ model {
   theta ~ normal(1,2);
   
   //sigma ~ cauchy(0,5);
-  sigma ~ normal(0,.1) T[0,];
+  sigma ~ normal(0,1) T[0,];
   
   // likelihood
   weighted_err ~ normal(0,sigma);

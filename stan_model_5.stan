@@ -16,19 +16,6 @@ data {
   //vector[N] y_hat;
 }
 
-transformed data {
-  
-  matrix [N, 119] intra_day_imputed;
-  
-  intra_day_imputed <- intra_day_1;
-  
-  for (i in 1:N)
-    for (j in 2:119)
-      if (is_nan(intra_day_imputed[i,j]))
-        intra_day_imputed[i,j] <- 0;
-  
-}
-
 parameters {
   //intercept
   //vector [N] alpha;
@@ -74,13 +61,13 @@ transformed parameters{
   
   //average return over first half of intra day
   //y_intra <- intra_day_1[,1] + 1;
-  y_intra <- col(intra_day_imputed, 1) + 1;
+  y_intra <- col(intra_day_1, 1) + 1;
   for (j in 2:119)
-    y_intra <- y_intra .* (col(intra_day_imputed, j) + 1);
+    y_intra <- y_intra .* (col(intra_day_1, j) + 1);
   
-  for (i in 1:N)
-    for (j in 2:119)
-      print("cols in y=", intra_day_1[i,j]);
+  //for (i in 1:N)
+  //  for (j in 2:119)
+  //    print("cols in y=", intra_day_1[i,j]);
   
   for (n in 1:N)
     y_intra[n] <- pow(y_intra[n], inv(119)) - 1;

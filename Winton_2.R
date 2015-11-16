@@ -48,6 +48,10 @@ intra.ret <- train.sample %>%
   select(Ret_2:Ret_120) %>%
   as.matrix()
 
+intra.ret[is.na(intra.ret)] <- 0
+
+sum(is.na(intra.ret))
+
 features <- train.sample %>%
   select(matches("Feature")) %>%
   as.matrix()

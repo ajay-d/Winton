@@ -4,6 +4,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(rstan)
+library(robustreg)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores(),
@@ -35,8 +36,17 @@ train.imp <- train.full %>%
          Feature_6 = Feature_6 %||% Feature_21,
          Feature_21 = Feature_21 %||% Feature_6,
          Feature_18 = Feature_18 %||% Feature_21,
-         Feature_21 = Feature_21 %||% Feature_18)
+         Feature_21 = Feature_21 %||% Feature_18) %>%
+  #used for multi-level
+  mutate(level_1 = sign(Ret_MinusOne) == sign(Ret_MinusTwo))
 
+table(train.imp$level_1, useNA = 'ifany')
+
+plot(density(rnorm(1000,0,2)))
+plot(density(rt(1000,2)))
+
+quantile(rt(1000,1))
+quantile(rnorm(1000,0,2))
 
 train.sample <- train.imp %>%
   replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,

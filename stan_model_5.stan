@@ -102,7 +102,8 @@ model {
   sigma ~ normal(0,1) T[0,];
   
   // likelihood
-  weighted_err ~ normal(0,sigma);
+  //weighted_err ~ normal(0,sigma);
+  weighted_err ~ student_t(2, 0,sigma);
   
   //y ~ normal(y_hat, sigma);
   

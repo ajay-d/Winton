@@ -38,9 +38,15 @@ train.imp <- train.full %>%
          Feature_18 = Feature_18 %||% Feature_21,
          Feature_21 = Feature_21 %||% Feature_18) %>%
   #used for multi-level
-  mutate(level_1 = sign(Ret_MinusOne) == sign(Ret_MinusTwo))
+  #4 level: ++, --, +-, -+
+  mutate(level_2 = sign(Ret_MinusOne) == sign(Ret_MinusTwo),
+         level_4 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & 1 == sign(Ret_MinusTwo), 1, 0),
+         level_4 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & -1 == sign(Ret_MinusTwo), 2, level_4),
+         level_4 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & 1 == sign(Ret_MinusTwo), 3, level_4),
+         level_4 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & -1 == sign(Ret_MinusTwo), 4, level_4))
 
-table(train.imp$level_1, useNA = 'ifany')
+table(train.imp$level_2, useNA = 'ifany')
+table(train.imp$level_4, useNA = 'ifany')
 
 plot(density(rnorm(1000,0,2)))
 plot(density(rt(1000,2)))
@@ -78,18 +84,18 @@ dat <- list('N' = dim(train.sample)[[1]],
             'y' = train.sample$Ret_PlusOne,
             'weights' = train.sample$Weight_Daily)
 
-fit <- stan('stan_model_5.stan',  
+fit <- stan('stan_model_5a.stan',  
             model_name = "Stan1", 
             iter=1500, warmup=500,
-            thin=2, chains=1, seed=252014,
+            thin=2, chains=4, seed=252014,
             data = dat)
 
 print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
 traceplot(fit, pars=c("beta", "theta", 'sigma'))
 
 ##########Add Pooling
-dat <- list('D' = length(sort(unique(train.sample$level_1))),
-            'll' = train.sample$level_1,
+dat <- list('D' = length(sort(unique(train.sample$level_2))),
+            'll' = train.sample$level_2,
             'N' = dim(train.sample)[[1]],
             'covar' = features,
             'intra_day_1' = intra.ret,
@@ -98,8 +104,8 @@ dat <- list('D' = length(sort(unique(train.sample$level_1))),
             'y' = train.sample$Ret_PlusOne,
             'weights' = train.sample$Weight_Daily)
 
-fit <- stan('stan_model_5_multi_1.stan',  
+fit <- stan('stan_model_5_multi_2.stan',  
             model_name = "Stan1", 
             iter=1500, warmup=500,
-            thin=2, chains=1, seed=252014,
+            thin=2, chains=4, seed=252014,
             data = dat)

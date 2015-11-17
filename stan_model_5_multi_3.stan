@@ -79,6 +79,9 @@ parameters {
   //real alpha;
   real alpha[D];
   
+  //real epsilon[D];
+  vector [N] epsilon;
+  
   //regression
   vector [25] beta[D];
   
@@ -95,7 +98,7 @@ transformed parameters{
   vector[N] weighted_err;
   
   for (n in 1:N)
-    y_hat[n] <- alpha[ll[n]] + row(covar, n) * beta[ll[n]] + row(y_m, n) * theta[ll[n]];
+    y_hat[n] <- alpha[ll[n]] + row(covar, n) * beta[ll[n]] + row(y_m, n) * theta[ll[n]] + epsilon[n];
 
   weighted_err <- (y - y_hat) .* weights;
 
@@ -104,13 +107,14 @@ transformed parameters{
 model {
   
   // priors
-  alpha ~ normal(0,10);
+  alpha ~ normal(0,2);
+  epsilon ~ normal(0,2);
   
   for(d in 1:D)
     beta[d] ~ normal(0,2);
   
   for(d in 1:D)
-    theta[d] ~ normal(1,2);
+    theta[d] ~ normal(0,2);
   
   //sigma ~ cauchy(0,5);
   sigma ~ normal(0,1) T[0,];

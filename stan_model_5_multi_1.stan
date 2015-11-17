@@ -1,5 +1,6 @@
 data {
   int<lower=0> N;
+  int<lower=0> D;
   vector [N] y;
   matrix [N, 25] covar;
   
@@ -7,6 +8,10 @@ data {
   matrix [N, 119] intra_day_1;
   vector [N] y_m2;
   vector [N] y_m1;
+  
+  //group (level)
+  //vector [N] ll;
+  int ll[N];
   
   vector [N] weights;
   
@@ -31,7 +36,7 @@ transformed data{
     y_m1_m2[n] <- pow(y_m1_m2[n], .5) - 1;
   
   //Return history matrix is:
-  //Ret_MinusTwo, Ret_MinusTwo, Average over 1+2, Average of first half of intra-day
+    //Ret_MinusTwo, Ret_MinusTwo, Average over 1+2, Average of first half of intra-day
   y_temp1 <- append_col(y_m2, y_m1);
   y_temp2 <- append_col(y_temp1, y_m1_m2);
   
@@ -44,12 +49,12 @@ transformed data{
     y_intra <- y_intra .* (col(intra_day_1, j) + 1);
   
   //for (i in 1:N)
-  //  for (j in 2:119)
-  //    print("cols in y=", intra_day_1[i,j]);
+    //  for (j in 2:119)
+      //    print("cols in y=", intra_day_1[i,j]);
   
   for (n in 1:N)
     y_intra[n] <- pow(y_intra[n], inv(119)) - 1;
-    
+  
   //y_m <- append_col(append_col(y_m1, y_m2), y_intra);
   y_m <- append_col(y_temp2, y_intra);
   
@@ -58,7 +63,8 @@ transformed data{
 parameters {
   //intercept
   //vector [N] alpha;
-  real alpha;
+  //real alpha;
+  real alpha[D];
   
   //regression
   vector [25] beta;
@@ -89,7 +95,9 @@ model {
   vector[N] y_hat;
   vector[N] weighted_err;
   
-  y_hat <- alpha + covar * beta + y_m * theta;
+  for (n in 1:N)
+    y_hat[n] <- alpha[ll[n]+1] + row(covar, n) * beta + row(y_m, n) * theta;
+
   weighted_err <- (y - y_hat) .* weights;
   
   // priors

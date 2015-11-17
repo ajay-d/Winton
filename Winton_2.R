@@ -86,3 +86,20 @@ fit <- stan('stan_model_5.stan',
 
 print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
 traceplot(fit, pars=c("beta", "theta", 'sigma'))
+
+##########Add Pooling
+dat <- list('D' = length(sort(unique(train.sample$level_1))),
+            'll' = train.sample$level_1,
+            'N' = dim(train.sample)[[1]],
+            'covar' = features,
+            'intra_day_1' = intra.ret,
+            "y_m2" = train.sample$Ret_MinusTwo,
+            "y_m1" = train.sample$Ret_MinusOne,
+            'y' = train.sample$Ret_PlusOne,
+            'weights' = train.sample$Weight_Daily)
+
+fit <- stan('stan_model_5_multi_1.stan',  
+            model_name = "Stan1", 
+            iter=1500, warmup=500,
+            thin=2, chains=1, seed=252014,
+            data = dat)

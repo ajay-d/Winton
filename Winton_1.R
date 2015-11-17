@@ -203,7 +203,7 @@ dat <- list('N' = dim(train_y2)[[1]],
             'y' = train_y2$Ret_PlusOne,
             'weights' = train_y2$Weight_Daily)
 
-fit <- stan('stan_model_4.stan',  
+fit <- stan('stan_garch.stan',  
             model_name = "Stan1", 
             iter=1500, warmup=500,
             thin=2, chains=4, seed=252014,
@@ -211,3 +211,6 @@ fit <- stan('stan_model_4.stan',
 
 print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
 traceplot(fit, pars=c("beta", "theta", 'sigma'))
+
+print(fit, pars=c("mu", "sigma"), probs=c(0.5, 0.75, 0.95))
+

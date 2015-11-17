@@ -16,42 +16,19 @@ data {
   //vector[N] y_hat;
 }
 
-parameters {
-  //intercept
-  //vector [N] alpha;
-  real alpha;
+transformed data{
   
-  //regression
-  vector [25] beta;
-  
-  //Thetas for all prior returns, and combined returns
-  vector[3] theta;
-  
-  real<lower=0> sigma;
-  
-}
-
-transformed parameters{
-  //matrix [N,2] covar;
-  matrix [N,3] y_m;
-  //vector [N] y_gr;
+  matrix [N,2] y_temp1;
+  matrix [N,3] y_temp2;
+  matrix [N,4] y_m;
   
   vector [N] y_m1_m2;
   vector [N] y_intra;
-  
-  //error terms
-  matrix [N,2] epsilon;
-  
-  //convert to growth rates
-  //y_gr <- y + 1;
-  
-  epsilon <- append_col(y - y_m1, y - y_m2);
   
   //average return over two days
   y_m1_m2 <- (y_m1 + 1) .* (y_m2 + 1);
   for (n in 1:N)
     y_m1_m2[n] <- pow(y_m1_m2[n], .5) - 1;
-  
   
   //Return history matrix is:
   //Ret_MinusTwo, Ret_MinusTwo, Average over 1+2, Average of first half of intra-day
@@ -75,6 +52,36 @@ transformed parameters{
     
   //y_m <- append_col(append_col(y_m1, y_m2), y_intra);
   y_m <- append_col(y_temp2, y_intra);
+  
+}
+
+parameters {
+  //intercept
+  //vector [N] alpha;
+  real alpha;
+  
+  //regression
+  vector [25] beta;
+  
+  //Thetas for all prior returns, and combined returns
+  vector[4] theta;
+  
+  real<lower=0> sigma;
+  
+}
+
+transformed parameters{
+  //matrix [N,2] covar;
+  //matrix [N,3] y_m;
+  vector [N] y_gr;
+  
+  //error terms
+  matrix [N,2] epsilon;
+  
+  //convert to growth rates
+  y_gr <- y + 1;
+  
+  epsilon <- append_col(y - y_m1, y - y_m2);
   
 }
 

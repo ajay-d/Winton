@@ -71,7 +71,7 @@ dat <- list('N' = dim(train.sample)[[1]],
 fit <- stan('stan_model_5.stan',  
             model_name = "Stan1", 
             iter=1500, warmup=500,
-            thin=2, chains=4, seed=252014,
+            thin=2, chains=1, seed=252014,
             data = dat)
 
 print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))

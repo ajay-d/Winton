@@ -19,6 +19,10 @@ data {
   //real y[N];
   //real y_hat[N];
   //vector[N] y_hat;
+  
+  //Add non-linear effects from both Features and returns
+  //y = A + B*feat + T*returns + B*f(feat) + T*f(returns) / feat^2,  ln(returns)
+  //ln(y) = A + B*feat + T*returns
 }
 
 transformed data{
@@ -26,9 +30,15 @@ transformed data{
   matrix [N,2] y_temp1;
   matrix [N,3] y_temp2;
   matrix [N,4] y_m;
+  matrix [N,4] ln_y_m;
   
   vector [N] y_m1_m2;
   vector [N] y_intra;
+  
+  matrix [N, 25] ln_covar;
+  
+  //log of 1+covars
+  ln_covar <- log(covar+1);
   
   //average return over two days
   y_m1_m2 <- (y_m1 + 1) .* (y_m2 + 1);
@@ -57,6 +67,9 @@ transformed data{
   
   //y_m <- append_col(append_col(y_m1, y_m2), y_intra);
   y_m <- append_col(y_temp2, y_intra);
+  
+  //log of 1+returns
+  ln_y_m <- log(y_m+1);
   
 }
 

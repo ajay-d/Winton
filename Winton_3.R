@@ -141,9 +141,9 @@ dat <- list('D' = length(sort(unique(train.sample$level_8))),
 
 fit <- stan('stan_multi_3beta.stan',
             model_name = "Stan1", 
-            iter=1500, warmup=500,
+            iter=2500, warmup=1500,
             thin=2, chains=4, seed=252014,
             data = dat)
 
-print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("beta", "theta", 'sigma'))
+print(fit, pars=c("beta", "theta", 'sigma', 'weighted_err', 'epsilon'), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("beta", "theta", 'sigma', 'weighted_err', 'epsilon'))

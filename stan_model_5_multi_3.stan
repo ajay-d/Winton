@@ -108,7 +108,7 @@ model {
   
   // priors
   alpha ~ normal(0,2);
-  epsilon ~ normal(0,2);
+  epsilon ~ normal(0,1);
   
   for(d in 1:D)
     beta[d] ~ normal(0,2);

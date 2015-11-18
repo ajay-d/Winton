@@ -64,35 +64,35 @@ train.imp %>%
 train.imp <- cbind(train.imp, df) %>%
   #8 level: +++, ---, ++-, --+, -++, +--, +-+, -+-
   mutate(level_8 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) == sign(return.intra) & 
-                          1 == sign(return.intra), 1, 0),
+                            sign(Ret_MinusOne) == sign(return.intra) & 
+                            1 == sign(return.intra), 1, 0),
          level_8 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) == sign(return.intra) & 
-                          -1 == sign(return.intra), 2, level_8),
+                            sign(Ret_MinusOne) == sign(return.intra) & 
+                            -1 == sign(return.intra), 2, level_8),
          # ++-
          level_8 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) != sign(return.intra) & 
-                          -1 == sign(return.intra), 3, level_8),
+                            sign(Ret_MinusOne) != sign(return.intra) & 
+                            -1 == sign(return.intra), 3, level_8),
          # --+
          level_8 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) != sign(return.intra) & 
-                          1 == sign(return.intra), 4, level_8),
+                            sign(Ret_MinusOne) != sign(return.intra) & 
+                            1 == sign(return.intra), 4, level_8),
          # -++
          level_8 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) == sign(return.intra) & 
-                          1 == sign(return.intra), 5, level_8),
+                            sign(Ret_MinusOne) == sign(return.intra) & 
+                            1 == sign(return.intra), 5, level_8),
          # +--
          level_8 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) == sign(return.intra) & 
-                          -1 == sign(return.intra), 6, level_8),
+                            sign(Ret_MinusOne) == sign(return.intra) & 
+                            -1 == sign(return.intra), 6, level_8),
          # +-+
          level_8 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) != sign(return.intra) & 
-                          1 == sign(return.intra), 7, level_8),
+                            sign(Ret_MinusOne) != sign(return.intra) & 
+                            1 == sign(return.intra), 7, level_8),
          # -+-
          level_8 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & 
-                          sign(Ret_MinusOne) != sign(return.intra) & 
-                          -1 == sign(return.intra), 8, level_8))
+                            sign(Ret_MinusOne) != sign(return.intra) & 
+                            -1 == sign(return.intra), 8, level_8))
 
 table(train.imp$level_2, useNA = 'ifany')
 table(train.imp$level_4, useNA = 'ifany')
@@ -128,15 +128,18 @@ train.full %>%
 
 ##########
 
-dat <- list('N' = dim(train.sample)[[1]],
+dat <- list('D' = length(sort(unique(train.sample$level_8))),
+            'll' = train.sample$level_8,
+            'N' = dim(train.sample)[[1]],
             'covar' = features,
             'intra_day_1' = intra.ret,
             "y_m2" = train.sample$Ret_MinusTwo,
             "y_m1" = train.sample$Ret_MinusOne,
+            "y_intra" = train.sample$return.intra,
             'y' = train.sample$Ret_PlusOne,
             'weights' = train.sample$Weight_Daily)
 
-fit <- stan('stan_model_5a.stan',  
+fit <- stan('stan_multi_3beta.stan',
             model_name = "Stan1", 
             iter=1500, warmup=500,
             thin=2, chains=4, seed=252014,
@@ -144,39 +147,3 @@ fit <- stan('stan_model_5a.stan',
 
 print(fit, pars=c("beta", "theta", "sigma"), probs=c(0.5, 0.75, 0.95))
 traceplot(fit, pars=c("beta", "theta", 'sigma'))
-
-##########Add Pooling
-##2 level
-dat <- list('D' = length(sort(unique(train.sample$level_2))),
-            'll' = train.sample$level_2,
-            'N' = dim(train.sample)[[1]],
-            'covar' = features,
-            'intra_day_1' = intra.ret,
-            "y_m2" = train.sample$Ret_MinusTwo,
-            "y_m1" = train.sample$Ret_MinusOne,
-            'y' = train.sample$Ret_PlusOne,
-            'weights' = train.sample$Weight_Daily)
-
-fit <- stan('stan_model_5_multi_2.stan',  
-            model_name = "Stan1", 
-            iter=1500, warmup=500,
-            thin=2, chains=4, seed=252014,
-            data = dat)
-
-##4 level + coeff
-dat <- list('D' = length(sort(unique(train.sample$level_4))),
-            'll' = train.sample$level_4,
-            'N' = dim(train.sample)[[1]],
-            'covar' = features,
-            'intra_day_1' = intra.ret,
-            "y_m2" = train.sample$Ret_MinusTwo,
-            "y_m1" = train.sample$Ret_MinusOne,
-            'y' = train.sample$Ret_PlusOne,
-            'weights' = train.sample$Weight_Daily)
-
-fit <- stan('stan_model_5_multi_3.stan',  
-            model_name = "Stan1", 
-            iter=1500, warmup=500,
-            thin=2, chains=4, seed=252014,
-            data = dat)
-

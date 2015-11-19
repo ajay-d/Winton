@@ -78,8 +78,8 @@ parameters {
   real alpha[D];
   
   //real epsilon[D];
-  //vector [N] epsilon;
-  real epsilon;
+  vector [N] epsilon;
+  //real epsilon;
   
   //regression
   vector [25] beta[D];
@@ -106,7 +106,7 @@ transformed parameters{
                 row(covar_sq, n) * beta_sq[ll[n]] + 
                 row(y_m, n) * theta[ll[n]] + 
                 row(y_m_ln, n) * theta_ln[ll[n]] + 
-                epsilon;
+                epsilon[n];
   
   weighted_err <- (y - y_hat) .* weights;
   

@@ -58,9 +58,6 @@ df <- data_frame(total.gr.intra = prod,
                  n.returns.intra = n.returns) %>%
   mutate(return.intra = total.gr.intra^(1/n.returns)-1)
 
-train.imp %>%
-  filter(Ret_MinusOne < 0, Ret_MinusTwo <0, return.intra <0)
-
 train.imp <- cbind(train.imp, df) %>%
   #8 level: +++, ---, ++-, --+, -++, +--, +-+, -+-
   mutate(level_8 = ifelse(sign(Ret_MinusOne) == sign(Ret_MinusTwo) & 
@@ -93,6 +90,8 @@ train.imp <- cbind(train.imp, df) %>%
          level_8 = ifelse(sign(Ret_MinusOne) != sign(Ret_MinusTwo) & 
                             sign(Ret_MinusOne) != sign(return.intra) & 
                             -1 == sign(return.intra), 8, level_8))
+
+#train.imp %>% filter(Ret_MinusOne < 0, Ret_MinusTwo <0, return.intra <0)
 
 table(train.imp$level_2, useNA = 'ifany')
 table(train.imp$level_4, useNA = 'ifany')
@@ -139,11 +138,11 @@ dat <- list('D' = length(sort(unique(train.sample$level_8))),
             'y' = train.sample$Ret_PlusOne,
             'weights' = train.sample$Weight_Daily)
 
-fit <- stan('stan_multi_3beta.stan',
+fit <- stan('stan_multi_2beta.stan',
             model_name = "Stan1", 
-            iter=2500, warmup=1500,
-            thin=2, chains=4, seed=252014,
+            iter=3000, warmup=2000,
+            thin=2, chains=5, seed=252014,
             data = dat)
 
-print(fit, pars=c("beta", "theta", 'sigma', 'weighted_err', 'epsilon'), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("beta", "theta", 'sigma', 'weighted_err', 'epsilon'))
+print(fit, pars=c("beta", "theta", 'sigma', 'epsilon', 'gamma'), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("beta", "theta", 'sigma', 'epsilon', 'gamma'))

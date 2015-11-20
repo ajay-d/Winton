@@ -265,7 +265,7 @@ dat <- list('T' = dim(intra.ret)[[2]], #time periods we have returns for
 fit <- stan('stan_intra_2beta.stan',
             model_name = "Stan_intra", 
             iter=3000, warmup=2000,
-            thin=2, chains=5, seed=252014,
+            thin=2, chains=1, seed=252014,
             data = dat)
 
 print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))

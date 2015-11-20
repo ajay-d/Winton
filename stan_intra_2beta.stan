@@ -89,8 +89,9 @@ transformed parameters{
   for (n in 1:N)
     for (q in 1:Q) {
       x_returns[n,q] <- x_intra[n,(T-q+1)];
-	  x_returns_new[n,q] <- x_intra_new[n,(T-q+1)];
-    }  
+	    x_returns_new[n,q] <- x_intra_new[n,(T-q+1)];
+    } 
+
 //  for (n in 1:N)
 //    mu[n] <- alpha[ll[n]] + 
 //      row(covar, n) * beta[ll[n]] +
@@ -118,10 +119,11 @@ model {
   
   for (j in 1:60){
     col(mu,j) ~ normal(0,2);
-    col(epsilon,j) ~ normal(0,2);
+    
+    col(epsilon,j) ~ normal(0,1);
 	
 	//Should increase through time?
-    col(theta_2,j) ~ normal(0,2);
+  //col(theta_2,j) ~ normal(0,2);
   }
   
   for(i in 1:60)
@@ -137,12 +139,14 @@ model {
 	  
 	  col(theta_1[d],j) ~ normal(0,2);
     }
-  for (n in 1:N)
-    for (t in 1:60)
-      y_hat[n,t] <- mu[n,t] + theta_2[n,t] * epsilon[n,t];
+
+  //for (n in 1:N)
+    //for (t in 1:60)
+      //y_hat[n,t] <- mu[n,t] + theta_2[n,t] * epsilon[n,t];
   
   for(t in 1:60)
-    col(y,t) ~ normal(col(y_hat,t), sigma[t]);
+    //col(y,t) ~ normal(col(y_hat,t), sigma[t]);
+    col(y,t) ~ normal(col(mu,t), sigma[t]);
   
 }
 
@@ -156,8 +160,10 @@ generated quantities {
       mu_new[i,j] <- alpha[ll_new[i]] + 
         row(covar_new, i) * col(beta[ll_new[i]], j) +
         row(covar_new_sq, i) * col(beta_sq[ll_new[i]], j) +
-        row(x_returns_new, i) * col(theta_1[ll_new[i]], j) + 
-        theta_2[i,j] * epsilon[i,j];
+        row(x_returns_new, i) * col(theta_1[ll_new[i]], j);
+  
+  print("cols in x=", cols(x_returns_new));
+  print("rows in x=", rows(x_returns_new));
   
   for (i in 1:N_new)
     for (j in 1:60)

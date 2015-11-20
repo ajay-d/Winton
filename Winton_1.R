@@ -2,6 +2,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(rstan)
+library(ggplot2)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores(),

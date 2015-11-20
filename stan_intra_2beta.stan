@@ -1,17 +1,22 @@
 data {
-  int<lower=0> N;
-  int<lower=0> D;
-  vector [N] y;
-  matrix [N, 25] covar;
+  
+  int<lower=0> T; //time periods
+  int<lower=0> N; //obs
+  int<lower=0> D; //levels of segmentation
+  
+  int<lower=0> Q; //lags
+  
+  vector[N] y;
+  matrix[N,25] covar;
   
   //intra-day returns
-  matrix [N, 119] intra_day_1;
+  matrix[N,T] y_intra;
   
   //group (level)
   //vector [N] ll;
   int ll[N];
   
-  vector [N] weights;
+  vector[N] weights;
   
   //one-dimensional array of size N containing real values
   //real y[N];
@@ -25,7 +30,7 @@ data {
 
 transformed data{
   
-  matrix [N, 25] covar_sq;
+  matrix[N,25] covar_sq;
   
   for (i in 1:N)
     for (j in 1:25)
@@ -44,63 +49,74 @@ parameters {
   //real epsilon;
   
   //regression
-  vector [25] beta[D];
-  vector [25] beta_sq[D];
+  vector[25] beta[D];
+  vector[25] beta_sq[D];
   
   //Thetas for all prior returns, and combined returns
-  vector[5] theta[D];
+  vector[Q] theta;
   
-  real<lower=0> sigma;
-  
-  real epsilon;
-  real gamma;
+  vector<lower=0>[N] sigma;
   
 }
 
 transformed parameters{
   
-  vector[N] y_hat;
-  vector[N] weighted_err;
+  matrix[N,T] epsilon;    // error term at time t
+  //vector[N] weighted_err;
+  
+  vector[N] mu;
   
   for (n in 1:N)
-    y_hat[n] <- alpha[ll[n]] + 
-      row(covar, n) * beta[ll[n]] + 
-      //row(covar_ln, n) * beta_ln[ll[n]] + 
-      row(covar_sq, n) * beta_sq[ll[n]] + 
-      row(y_m, n) * theta[ll[n]] + 
-      row(y_m_ln, n) * theta_ln[ll[n]] + 
-      epsilon * gamma;
+    mu[n] <- alpha[ll[n]] + 
+      row(covar, n) * beta[ll[n]] +
+      row(covar_sq, n) * beta_sq[ll[n]];
   
-  weighted_err <- (y - y_hat) .* weights;
+  for (n in 1:N)
+    for (t in 1:T) {
+      epsilon[n,t] <- y_intra[n,t] - mu[n];
+      for (q in 1:min(t-1,Q))
+        epsilon[n,t] <- epsilon[n,t] - theta[q] * epsilon[n,t - q];
+    }
+  
+  //weighted_err <- (y - y_hat) .* weights;
   
 }
 
 model {
   
+  matrix[N,T] eta;
+  
   // priors
   alpha ~ normal(0,2);
   
-  epsilon ~ normal(0,.5);
-  gamma ~ cauchy(0,2.5);
-  
   for(d in 1:D){
     beta[d] ~ normal(0,2);
-    //beta_ln[d] ~ normal(0,2);
     beta_sq[d] ~ normal(0,2);
   }
   
-  for(d in 1:D){
-    theta[d] ~ normal(0,2);
-    theta_ln[d] ~ normal(0,2);
-  }
+  theta ~ normal(0,2);
   
-  sigma ~ cauchy(0,5);
+  //sigma ~ cauchy(0,5);
   //sigma ~ normal(0,1) T[0,];
   
+  for(n in 1:N)
+    sigma[n] ~ cauchy(0,1) T[0,];
+  
   // likelihood
-  weighted_err ~ normal(0,sigma);
+  //weighted_err ~ normal(0,sigma);
   //weighted_err ~ student_t(2,0,sigma);
   
-  //y ~ normal(y_hat, sigma);
+  for (n in 1:N)
+    for (t in 1:T) {
+      eta[n,t] <- mu[n];
+      for (q in 1:min(t-1,Q))
+        eta[n,t] <- eta[n,t] + theta[q] * epsilon[n,t - q];
+    }
   
+  //for(n in 1:N)
+    //for (t in 1:T)
+      //y_intra[n,t] ~ normal(eta[n,t],sigma[n]);
+  
+  for(n in 1:N)    
+    row(y_intra,n) ~ normal(row(eta,n),sigma[n]);
 }

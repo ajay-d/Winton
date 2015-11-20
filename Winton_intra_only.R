@@ -138,19 +138,21 @@ ggplot(train.sample) + geom_histogram(aes(x=Weight_Intraday, fill=as.factor(leve
 
 ##########
 
-dat <- list('D' = length(sort(unique(train.sample$level_8))),
+dat <- list('Q' = 3, #number of lags for MA
+            'D' = length(sort(unique(train.sample$level_8))),
             'll' = train.sample$level_8,
-            'N' = dim(train.sample)[[1]],
+            'N' = dim(train.sample)[[1]], #obs
+            'T' = dim(intra.ret)[[2]], #time periods
             'covar' = features,
-            'intra_day_1' = intra.ret,
+            'y_intra' = intra.ret,
             #'y' = train.sample$Ret_120,
             'y' = train.sample$Ret_121,
             'weights' = train.sample$Weight_Intraday)
 
 fit <- stan('stan_intra_2beta.stan',
-            model_name = "Stan1", 
-            iter=3000, warmup=2000,
-            thin=2, chains=5, seed=252014,
+            model_name = "Stan_intra", 
+            iter=300, warmup=200,
+            thin=2, chains=1, seed=252014,
             data = dat)
 
 print(fit, pars=c("beta", "theta", 'sigma', 'epsilon', 'gamma'), probs=c(0.5, 0.75, 0.95))

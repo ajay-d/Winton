@@ -148,18 +148,22 @@ model {
 
 generated quantities {
   
-  matrix[N,60] mu_new;
-  matrix[N,60] y_pred;
+  matrix[N_new,60] mu_new;
+  matrix[N_new,60] y_pred;
   
-  for (i in 1:N)
+  for (i in 1:N_new)
     for (j in 1:60)
       mu_new[i,j] <- alpha[ll_new[i]] + 
         row(covar_new, i) * col(beta[ll_new[i]], j) +
         row(covar_new_sq, i) * col(beta_sq[ll_new[i]], j) +
         row(x_returns_new, i) * col(theta_1[ll_new[i]], j) + 
         theta_2[i,j] * epsilon[i,j];
+  
+  for (i in 1:N_new)
+    for (j in 1:60)
+      y_pred[i,j] <- normal_rng(mu_new[i,j], sigma[j]);
 
-  for(t in 1:60)
-    col(y_pred,t) <- normal_rng(col(mu_new,t), sigma[t]);
+  //for(t in 1:60)
+  //  col(y_pred,t) <- normal_rng(col(mu_new,t), sigma[t]);
   
 }

@@ -1,16 +1,18 @@
 data {
   
   int<lower=0> T; //time periods
-  int<lower=0> N; //obs
+  int<lower=0> N; //training obs
+  int<lower=0> N_new; //test obs
+  
   int<lower=0> D; //levels of segmentation
   
   int<lower=0> Q; //lags
   
-  vector[N] y;
+  matrix[N,60] y;
   matrix[N,25] covar;
   
   //intra-day returns
-  matrix[N,T] y_intra;
+  matrix[N,T] x_intra;
   
   //group (level)
   //vector [N] ll;
@@ -23,6 +25,11 @@ data {
   //real y_hat[N];
   //vector[N] y_hat;
   
+  //intra-day returns for prediction
+  matrix[N_new,T] x_intra_new;
+  matrix[N_new,25] covar_new;
+  int ll_new[N_new];
+  
   //Add non-linear effects from both Features and returns
   //y = A + B*feat + T*returns + B*f(feat) + T*f(returns) / feat^2,  ln(returns)
   //ln(y) = A + B*feat + T*returns
@@ -31,16 +38,20 @@ data {
 transformed data{
   
   matrix[N,25] covar_sq;
+  matrix[N_new,25] covar_new_sq;
   
   for (i in 1:N)
     for (j in 1:25)
       covar_sq[i,j] <- pow(covar[i,j], 2);
+  
+  for (i in 1:N_new)
+    for (j in 1:25)
+      covar_new_sq[i,j] <- pow(covar_new[i,j], 2);
     
 }
 
 parameters {
   //intercept
-  //vector [N] alpha;
   //real alpha;
   real alpha[D];
   
@@ -48,35 +59,54 @@ parameters {
   //vector [N] epsilon;
   //real epsilon;
   
-  //regression
-  vector[25] beta[D];
-  vector[25] beta_sq[D];
+  row_vector<lower=0>[60] sigma;
+  
+  //regression on features
+  //vector[25] beta[D];
+  //vector[25] beta_sq[D];
+  matrix[25,60] beta[D];
+  matrix[25,60] beta_sq[D];
   
   //Thetas for all prior returns, and combined returns
-  vector[Q] theta;
+  //vector[Q] theta_1[D];
+  matrix[Q,60] theta_1[D];
   
-  vector<lower=0>[N] sigma;
+  //Thetas on error terms
+  matrix[N,60] theta_2;
   
 }
 
 transformed parameters{
   
-  matrix[N,T] epsilon;    // error term at time t
+  matrix[N,60] epsilon;    // error term at time t
   //vector[N] weighted_err;
   
-  vector[N] mu;
+  //vector[N] mu;
+  matrix[N, 60] mu;
+  matrix[N, Q] x_returns;
+  matrix[N, Q] x_returns_new;
   
   for (n in 1:N)
-    mu[n] <- alpha[ll[n]] + 
-      row(covar, n) * beta[ll[n]] +
-      row(covar_sq, n) * beta_sq[ll[n]];
+    for (q in 1:Q) {
+      x_returns[n,q] <- x_intra[n,(T-q+1)];
+	  x_returns_new[n,q] <- x_intra_new[n,(T-q+1)];
+    }  
+//  for (n in 1:N)
+//    mu[n] <- alpha[ll[n]] + 
+//      row(covar, n) * beta[ll[n]] +
+//      row(covar_sq, n) * beta_sq[ll[n]] +
+//      row(x_returns, n) * theta_1[ll[n]];
+
+  for (i in 1:N)
+    for (j in 1:60)
+      mu[i,j] <- alpha[ll[i]] + 
+        row(covar, i) * col(beta[ll[i]], j) +
+        row(covar_sq, i) * col(beta_sq[ll[i]], j) +
+        row(x_returns, i) * col(theta_1[ll[i]], j);
   
   for (n in 1:N)
-    for (t in 1:T) {
-      epsilon[n,t] <- y_intra[n,t] - mu[n];
-      for (q in 1:min(t-1,Q))
-        epsilon[n,t] <- epsilon[n,t] - theta[q] * epsilon[n,t - q];
-    }
+    for (t in 1:60)
+      epsilon[n,t] <- y[n,t] - mu[n,t]; //error for each forcast
   
   //weighted_err <- (y - y_hat) .* weights;
   
@@ -84,39 +114,52 @@ transformed parameters{
 
 model {
   
-  matrix[N,T] eta;
+  matrix[N,60] y_hat;
+  
+  for (j in 1:60){
+    col(mu,j) ~ normal(0,2);
+    col(epsilon,j) ~ normal(0,2);
+	
+	//Should increase through time?
+    col(theta_2,j) ~ normal(0,2);
+  }
+  
+  for(i in 1:60)
+    sigma[i] ~ cauchy(0,2.5)T[0,];
   
   // priors
   alpha ~ normal(0,2);
   
-  for(d in 1:D){
-    beta[d] ~ normal(0,2);
-    beta_sq[d] ~ normal(0,2);
-  }
-  
-  theta ~ normal(0,2);
-  
-  //sigma ~ cauchy(0,5);
-  //sigma ~ normal(0,1) T[0,];
-  
-  for(n in 1:N)
-    sigma[n] ~ cauchy(0,1) T[0,];
-  
-  // likelihood
-  //weighted_err ~ normal(0,sigma);
-  //weighted_err ~ student_t(2,0,sigma);
-  
-  for (n in 1:N)
-    for (t in 1:T) {
-      eta[n,t] <- mu[n];
-      for (q in 1:min(t-1,Q))
-        eta[n,t] <- eta[n,t] + theta[q] * epsilon[n,t - q];
+  for(d in 1:D)
+    for (j in 1:60){
+      col(beta[d],j) ~ normal(0,2);
+      col(beta_sq[d],j) ~ normal(0,2);
+	  
+	  col(theta_1[d],j) ~ normal(0,2);
     }
+  for (n in 1:N)
+    for (t in 1:60)
+      y_hat[n,t] <- mu[n,t] + theta_2[n,t] * epsilon[n,t];
   
-  //for(n in 1:N)
-    //for (t in 1:T)
-      //y_intra[n,t] ~ normal(eta[n,t],sigma[n]);
+  for(t in 1:60)
+    col(y,t) ~ normal(col(y_hat,t), sigma[t]);
   
-  for(n in 1:N)    
-    row(y_intra,n) ~ normal(row(eta,n),sigma[n]);
+}
+
+generated quantities {
+  
+  matrix[N,60] mu_new;
+  matrix[N,60] y_pred;
+  
+  for (i in 1:N)
+    for (j in 1:60)
+      mu_new[i,j] <- alpha[ll_new[i]] + 
+        row(covar_new, i) * col(beta[ll_new[i]], j) +
+        row(covar_new_sq, i) * col(beta_sq[ll_new[i]], j) +
+        row(x_returns_new, i) * col(theta_1[ll_new[i]], j) + 
+        theta_2[n,t] * epsilon[n,t];
+
+  for(t in 1:60)
+    col(y_pred,t) ~ normal_rng(col(mu_new,t), sigma[t]);
+  
 }

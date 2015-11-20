@@ -11,6 +11,8 @@ options(mc.cores = parallel::detectCores(),
         stringsAsFactors = FALSE,
         scipen = 10) 
 
+set.seed(2015)
+
 #' coalesce function
 `%||%` <- function(a, b) ifelse(!is.na(a), a, b)
 
@@ -138,8 +140,8 @@ dat <- list('D' = length(sort(unique(train.sample$level_8))),
             'y' = train.sample$Ret_PlusOne,
             'weights' = train.sample$Weight_Daily)
 
-fit <- stan('stan_multi_2beta.stan',
-            model_name = "Stan1", 
+fit <- stan('stan_multi_2betaa.stan',
+            model_name = "Stan2", 
             iter=3000, warmup=2000,
             thin=2, chains=5, seed=252014,
             data = dat)

@@ -155,5 +155,6 @@ fit <- stan('stan_intra_2beta.stan',
             thin=2, chains=1, seed=252014,
             data = dat)
 
-print(fit, pars=c("beta", "theta", 'sigma', 'epsilon', 'gamma'), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("beta", "theta", 'sigma', 'epsilon', 'gamma'))
+print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("theta", 'sigma', 'epsilon'), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("alpha", "theta"))

@@ -157,9 +157,9 @@ generated quantities {
         row(covar_new, i) * col(beta[ll_new[i]], j) +
         row(covar_new_sq, i) * col(beta_sq[ll_new[i]], j) +
         row(x_returns_new, i) * col(theta_1[ll_new[i]], j) + 
-        theta_2[n,t] * epsilon[n,t];
+        theta_2[i,j] * epsilon[i,j];
 
   for(t in 1:60)
-    col(y_pred,t) ~ normal_rng(col(mu_new,t), sigma[t]);
+    col(y_pred,t) <- normal_rng(col(mu_new,t), sigma[t]);
   
 }

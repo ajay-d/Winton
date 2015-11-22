@@ -92,7 +92,7 @@ transformed parameters {
   vector[N] y_hat;
   y_hat <- alpha + x*beta;
   squared_error <- dot_self(y-y_hat);
-  squared_error <- dot_self(y_hat)-y;
+  //squared_error <- dot_self(y_hat-y);
 }
 model {
   increment_log_prob(-squared_error);

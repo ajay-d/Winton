@@ -20,13 +20,13 @@ data {
   
   vector[N] weights;
   
-  matrix[N_new, 25] covar_new;
-  vector [N_new] x_m2_new;
-  vector [N_new] x_m1_new;
-  //intra-day returns for prediction
-  vector [N_new] x_intra_new;
-  
-  int ll_new[N_new];
+//   matrix[N_new, 25] covar_new;
+//   vector [N_new] x_m2_new;
+//   vector [N_new] x_m1_new;
+//   //intra-day returns for prediction
+//   vector [N_new] x_intra_new;
+//   
+//   int ll_new[N_new];
   
   //Add non-linear effects from both Features and returns
   //y = A + B*feat + T*returns + B*f(feat) + T*f(returns) / feat^2,  ln(returns)
@@ -36,15 +36,15 @@ data {
 transformed data{
   
   matrix[N, 25] covar_sq;
-  matrix[N_new, 25] covar_new_sq;
+  //matrix[N_new, 25] covar_new_sq;
   
   for (i in 1:N)
     for (j in 1:25)
       covar_sq[i,j] <- pow(covar[i,j], 2);
     
-  for (i in 1:N_new)
-    for (j in 1:25)
-      covar_new_sq[i,j] <- pow(covar_new[i,j], 2);
+//   for (i in 1:N_new)
+//     for (j in 1:25)
+//       covar_new_sq[i,j] <- pow(covar_new[i,j], 2);
       
 }
 

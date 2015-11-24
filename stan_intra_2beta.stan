@@ -2,7 +2,7 @@ data {
   
   int<lower=0> T; //time periods
   int<lower=0> N; //training obs
-  int<lower=0> N_new; //test obs
+  //int<lower=0> N_new; //test obs
   
   int<lower=0> D; //levels of segmentation
   
@@ -26,9 +26,9 @@ data {
   //vector[N] y_hat;
   
   //intra-day returns for prediction
-  matrix[N_new, T] x_intra_new;
-  matrix[N_new, 25] covar_new;
-  int ll_new[N_new];
+//   matrix[N_new, T] x_intra_new;
+//   matrix[N_new, 25] covar_new;
+//   int ll_new[N_new];
   
   //Add non-linear effects from both Features and returns
   //y = A + B*feat + T*returns + B*f(feat) + T*f(returns) / feat^2,  ln(returns)
@@ -38,15 +38,15 @@ data {
 transformed data{
   
   matrix[N, 25] covar_sq;
-  matrix[N_new, 25] covar_new_sq;
+  //matrix[N_new, 25] covar_new_sq;
   
   for (i in 1:N)
     for (j in 1:25)
       covar_sq[i,j] <- pow(covar[i,j], 2);
   
-  for (i in 1:N_new)
-    for (j in 1:25)
-      covar_new_sq[i,j] <- pow(covar_new[i,j], 2);
+//   for (i in 1:N_new)
+//     for (j in 1:25)
+//       covar_new_sq[i,j] <- pow(covar_new[i,j], 2);
     
 }
 
@@ -59,7 +59,7 @@ parameters {
   //vector [N] epsilon;
   //real epsilon;
   
-  row_vector<lower=0>[60] sigma;
+  //row_vector<lower=0>[60] sigma;
   
   //regression on features
   //vector[25] beta[D];
@@ -72,7 +72,7 @@ parameters {
   matrix[Q, 60] theta_1[D];
   
   //Thetas on error terms
-  matrix[N, 60] theta_2;
+  //matrix[N, 60] theta_2;
   
 }
 
@@ -85,12 +85,12 @@ transformed parameters{
   //vector[N] mu;
   matrix[N, 60] mu;
   matrix[N, Q] x_returns;
-  matrix[N, Q] x_returns_new;
+  //matrix[N, Q] x_returns_new;
   
   for (n in 1:N)
     for (q in 1:Q) {
       x_returns[n,q] <- x_intra[n,(T-q+1)];
-	    x_returns_new[n,q] <- x_intra_new[n,(T-q+1)];
+	    //x_returns_new[n,q] <- x_intra_new[n,(T-q+1)];
     } 
 
 //  for (n in 1:N)
@@ -117,16 +117,16 @@ transformed parameters{
 
 model {
   
-  matrix[N, 60] y_hat;
+  //matrix[N, 60] y_hat;
   
-  for (j in 1:60){
-    col(mu,j) ~ normal(0,2);
-    
-    col(epsilon,j) ~ normal(0,1);
-	
-	//Should increase through time?
-  //col(theta_2,j) ~ normal(0,2);
-  }
+//   for (j in 1:60){
+//     col(mu,j) ~ normal(0,2);
+//     
+//     col(epsilon,j) ~ normal(0,1);
+// 	
+// 	//Should increase through time?
+//   col(theta_2,j) ~ normal(0,2);
+//   }
   
   //for(i in 1:60)
     //sigma[i] ~ cauchy(0,2.5)T[0,];
@@ -154,26 +154,26 @@ model {
   
 }
 
-generated quantities {
-  
-  matrix[N_new, 60] mu_new;
-  matrix[N_new, 60] y_pred;
-  
-  for (i in 1:N_new)
-    for (j in 1:60)
-      mu_new[i,j] <- alpha[ll_new[i]] +
-        row(covar_new, i) * col(beta[ll_new[i]], j);
-        //row(covar_new_sq, i) * col(beta_sq[ll_new[i]], j) +
-        //row(x_returns_new, i) * col(theta_1[ll_new[i]], j);
-  
-  print("cols in x=", cols(x_returns_new));
-  print("rows in x=", rows(x_returns_new));
-  
-  for (i in 1:N_new)
-    for (j in 1:60)
-      y_pred[i,j] <- normal_rng(mu_new[i,j], sigma[j]);
-
-  //for(t in 1:60)
-  //  col(y_pred,t) <- normal_rng(col(mu_new,t), sigma[t]);
-  
-}
+// generated quantities {
+//   
+//   matrix[N_new, 60] mu_new;
+//   matrix[N_new, 60] y_pred;
+//   
+//   for (i in 1:N_new)
+//     for (j in 1:60)
+//       mu_new[i,j] <- alpha[ll_new[i]] +
+//         row(covar_new, i) * col(beta[ll_new[i]], j);
+//         //row(covar_new_sq, i) * col(beta_sq[ll_new[i]], j) +
+//         //row(x_returns_new, i) * col(theta_1[ll_new[i]], j);
+//   
+//   print("cols in x=", cols(x_returns_new));
+//   print("rows in x=", rows(x_returns_new));
+//   
+//   for (i in 1:N_new)
+//     for (j in 1:60)
+//       y_pred[i,j] <- normal_rng(mu_new[i,j], sigma[j]);
+// 
+//   //for(t in 1:60)
+//   //  col(y_pred,t) <- normal_rng(col(mu_new,t), sigma[t]);
+//   
+// }

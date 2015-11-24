@@ -247,25 +247,30 @@ ggplot(train.sample) + geom_histogram(aes(x=Weight_Intraday, fill=as.factor(leve
 
 ##########
 
-dat <- list('T' = dim(intra.ret)[[2]], #time periods we have returns for
-            'N' = dim(train.sample)[[1]], #number of obs
-            'Q' = 3, #number of lags for MA
+dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'D' = length(sort(unique(train.sample$level_8))), #number of stratification levels
+            'T' = dim(intra.ret)[[2]], #time periods we have returns for
+            
+            'Q' = 3, #number of lags for MA
+            'y' = y, #training 
+            
             'll' = train.sample$level_8, #level indicator
             'covar' = features,
             'x_intra' = intra.ret,
-            'y' = y, #training 
-            'weights' = train.sample$Weight_Intraday,
-            'N_new' = 60000,
-            'x_intra_new' = x_intra_new, #new covars for predictions
-            'covar_new' = features_new, #new returns for predictions
-            'll_new' = test.imp$level_8 #level of new obs
+            
+            #'N_new' = 60000,
+            
+            #'ll_new' = test.imp$level_8, #level of new obs
+            #'covar_new' = features_new, #new returns for predictions
+            #'x_intra_new' = x_intra_new, #new covars for predictions
+            
+            'weights' = train.sample$Weight_Intraday
             )
 
 fit <- stan('stan_intra_2beta.stan',
             model_name = "Stan_intra", 
             iter=3000, warmup=2000,
-            thin=2, chains=1, seed=252014,
+            thin=2, chains=4, seed=252014,
             data = dat)
 
 print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))

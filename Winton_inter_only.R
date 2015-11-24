@@ -262,19 +262,19 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             
             'N_new' = 60000,
             
-            'll_new' = test.imp$level_8, #level of new obs
-            'covar_new' = features_new,
-            'x_m2_new' = test.imp$Ret_MinusTwo,
-            'x_m1_new' = test.imp$Ret_MinusOne,
-            "x_intra_new" = test.imp$return.intra,
+            #'ll_new' = test.imp$level_8, #level of new obs
+            #'covar_new' = features_new,
+            #'x_m2_new' = test.imp$Ret_MinusTwo,
+            #'x_m1_new' = test.imp$Ret_MinusOne,
+            #"x_intra_new" = test.imp$return.intra,
             
             'weights' = train.sample$Weight_Daily
 )
 
 fit <- stan('stan_inter_2beta.stan',
-            model_name = "Stan_intra", 
-            iter=300, warmup=200,
-            thin=2, chains=1, seed=252014,
+            model_name = "Stan_inter", 
+            iter=3000, warmup=2000,
+            thin=2, chains=4, seed=252014,
             data = dat)
 
 print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))

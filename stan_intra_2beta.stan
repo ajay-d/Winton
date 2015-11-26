@@ -71,6 +71,11 @@ parameters {
   //vector[Q] theta_1[D];
   matrix[Q, 60] theta_1[D];
   
+  vector [60] sigma_1;
+  
+  real<lower=0> sd_1;
+  real<lower=0> sd_2;
+  
   //Thetas on error terms
   //matrix[N, 60] theta_2;
   
@@ -86,6 +91,8 @@ transformed parameters{
   matrix[N, 60] mu;
   matrix[N, Q] x_returns;
   //matrix[N, Q] x_returns_new;
+  
+  vector[N] norm;
   
   for (n in 1:N)
     for (q in 1:Q) {
@@ -104,14 +111,17 @@ transformed parameters{
       mu[i,j] <- alpha[ll[i]] + 
         row(covar, i) * col(beta[ll[i]], j) +
         row(covar_sq, i) * col(beta_sq[ll[i]], j) +
-        row(x_returns, i) * col(theta_1[ll[i]], j);
+        row(x_returns, i) * col(theta_1[ll[i]], j) + 
+        sigma_1[j];
   
   for (n in 1:N)
     for (t in 1:60)
       epsilon[n,t] <- y[n,t] - mu[n,t]; //error for each forcast
   
+  norm <- weights ./ (sum(weights)/rows(weights));
+  
   //abs??
-  weighted_err <- epsilon .* rep_matrix(weights, 60);
+  weighted_err <- epsilon .* rep_matrix(norm, 60);
   
 }
 
@@ -128,8 +138,12 @@ model {
 //   col(theta_2,j) ~ normal(0,2);
 //   }
   
-  //for(i in 1:60)
-    //sigma[i] ~ cauchy(0,2.5)T[0,];
+  sd_1 ~ normal(0,2.5) T[0,];
+  sd_2 ~ cauchy(0,2.5) T[0,];
+  
+  for(i in 1:60)
+    sigma_1[i] ~ normal(0,sd_1);
+    //sigma_1[i] ~ normal(0,.1);
   
   // priors
   alpha ~ normal(0,2);
@@ -142,7 +156,9 @@ model {
 	  col(theta_1[d],j) ~ normal(0,2);
     }
 
-  increment_log_prob(-sum(weighted_err));
+  //increment_log_prob(-sum(weighted_err));
+  for(i in 1:60)
+    col(weighted_err,i) ~ normal(0,sd_2);
   
   //for (n in 1:N)
     //for (t in 1:60)

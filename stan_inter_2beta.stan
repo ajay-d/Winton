@@ -5,20 +5,20 @@ data {
   
   int<lower=0> D; //levels of segmentation
   
-  matrix[N, 25] covar;
+  matrix [N, 25] covar;
   vector [N] x_m2;
   vector [N] x_m1;
   //combo intra-day returns and two prior day returns
   vector [N] x_intra;
   
   //Two days to forecast
-  matrix[N, 2] y;
+  matrix [N, 2] y;
   
   //group (level)
   //vector [N] ll;
   int ll[N];
   
-  vector[N] weights;
+  vector [N] weights;
   
 //   matrix[N_new, 25] covar_new;
 //   vector [N_new] x_m2_new;
@@ -35,7 +35,7 @@ data {
 
 transformed data{
   
-  matrix[N, 25] covar_sq;
+  matrix [N, 25] covar_sq;
   //matrix[N_new, 25] covar_new_sq;
   
   for (i in 1:N)
@@ -54,13 +54,15 @@ parameters {
   real alpha[D, 2];
   
   //regression on features
-  matrix[25, 2] beta[D];
-  matrix[25, 2] beta_sq[D];
+  //2 for the two forecast days
+  matrix [25, 2] beta[D];
+  matrix [25, 2] beta_sq[D];
   
   //Thetas for all prior returns, and combined returns
-  matrix[N, 2] theta_m2[D];
-  matrix[N, 2] theta_m1[D];
-  matrix[N, 2] theta_intra[D];
+  //2 for the two forecast days
+  matrix [Q, 2] theta_m2[D];
+  matrix [Q, 2] theta_m1[D];
+  matrix [Q, 2] theta_intra[D];
   
   real sigma_1;
   real sigma_2;
@@ -72,13 +74,13 @@ parameters {
 
 transformed parameters{
   
-  matrix[N, 2] weighted_err;
-  matrix[N, 2] epsilon;    // error
+  matrix [N, 2] weighted_err;
+  matrix [N, 2] epsilon;    // error
   
-  vector[N] y_hat_P1;
-  vector[N] y_hat_P2;
+  vector [N] y_hat_P1;
+  vector [N] y_hat_P2;
   
-  vector[N] norm;
+  vector [N] norm;
   
   for (i in 1:N) {
     y_hat_P1[i] <- alpha[ll[i], 1] + 

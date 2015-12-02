@@ -254,7 +254,7 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'Q' = 3, #number of lags for MA
             'y' = y, #training 
             
-            'll' = train.sample$level_8, #level indicator
+            #'ll' = train.sample$level_8, #level indicator
             'covar' = features,
             'x_intra' = intra.ret,
             
@@ -267,7 +267,7 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'weights' = train.sample$Weight_Intraday
             )
 
-fit <- stan('stan_intra_2beta.stan',
+fit <- stan('stan_intra_2beta_1level.stan',
             model_name = "Stan_intra", 
             iter=3000, warmup=2000,
             thin=2, chains=4, seed=252014,

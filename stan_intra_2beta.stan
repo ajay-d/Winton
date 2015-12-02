@@ -8,17 +8,17 @@ data {
   
   int<lower=0> Q; //lags
   
-  matrix[N, 60] y;
-  matrix[N, 25] covar;
+  matrix [N, 60] y;
+  matrix [N, 25] covar;
   
   //intra-day returns
-  matrix[N, T] x_intra;
+  matrix [N, T] x_intra;
   
   //group (level)
   //vector [N] ll;
   int ll[N];
   
-  vector[N] weights;
+  vector [N] weights;
   
   //one-dimensional array of size N containing real values
   //real y[N];
@@ -37,7 +37,7 @@ data {
 
 transformed data{
   
-  matrix[N, 25] covar_sq;
+  matrix [N, 25] covar_sq;
   //matrix[N_new, 25] covar_new_sq;
   
   for (i in 1:N)
@@ -64,14 +64,14 @@ parameters {
   //regression on features
   //vector[25] beta[D];
   //vector[25] beta_sq[D];
-  matrix[25, 60] beta[D];
-  matrix[25, 60] beta_sq[D];
+  matrix [25, 60] beta[D];
+  matrix [25, 60] beta_sq[D];
   
   //Thetas for all prior returns, and combined returns
   //vector[Q] theta_1[D];
-  matrix[Q, 60] theta_1[D];
+  matrix [Q, 60] theta_1[D];
   
-  vector[60] sigma_1;
+  vector [60] sigma_1;
   
   real<lower=0> sd_1;
   real<lower=0> sd_2;
@@ -83,16 +83,16 @@ parameters {
 
 transformed parameters{
   
-  matrix[N, 60] epsilon;    // error term at time t
+  matrix [N, 60] epsilon;    // error term at time t
   //vector[N] weighted_err;
   
-  matrix[N, 60] weighted_err;
+  matrix [N, 60] weighted_err;
   //vector[N] mu;
-  matrix[N, 60] mu;
-  matrix[N, Q] x_returns;
+  matrix [N, 60] mu;
+  matrix [N, Q] x_returns;
   //matrix[N, Q] x_returns_new;
   
-  vector[N] norm;
+  vector [N] norm;
   
   for (n in 1:N)
     for (q in 1:Q) {

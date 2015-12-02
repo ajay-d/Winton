@@ -247,6 +247,8 @@ ggplot(train.sample) + geom_histogram(aes(x=Weight_Intraday, fill=as.factor(leve
 
 ggplot(train.sample) + geom_histogram(aes(Weight_Daily))
 
+norm.weights <- train.sample$Weight_Daily / (sum(train.sample$Weight_Daily) / length(train.sample$Weight_Daily))
+summary(norm.weights)
 ##########
 
 dat <- list('N' = dim(train.sample)[[1]], #number of obs

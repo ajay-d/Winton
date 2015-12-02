@@ -71,7 +71,7 @@ parameters {
   //vector[Q] theta_1[D];
   matrix[Q, 60] theta_1[D];
   
-  vector [60] sigma_1;
+  vector[60] sigma_1;
   
   real<lower=0> sd_1;
   real<lower=0> sd_2;
@@ -138,11 +138,11 @@ model {
 //   col(theta_2,j) ~ normal(0,2);
 //   }
   
-  sd_1 ~ normal(0,2.5) T[0,];
-  sd_2 ~ cauchy(0,2.5) T[0,];
+  //sd_1 ~ normal(0,2.5) T[0,];
+  //sd_2 ~ cauchy(0,2.5) T[0,];
   
-  for(i in 1:60)
-    sigma_1[i] ~ normal(0,sd_1);
+  //for(i in 1:60)
+    //sigma_1[i] ~ normal(0,sd_1);
     //sigma_1[i] ~ normal(0,.1);
   
   // priors
@@ -158,7 +158,7 @@ model {
 
   //increment_log_prob(-sum(weighted_err));
   for(i in 1:60)
-    col(weighted_err,i) ~ normal(0,sd_2);
+    col(weighted_err,i) ~ normal(0,2);
   
   //for (n in 1:N)
     //for (t in 1:60)

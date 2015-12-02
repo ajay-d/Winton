@@ -62,6 +62,12 @@ parameters {
   matrix[N, 2] theta_m1[D];
   matrix[N, 2] theta_intra[D];
   
+  real sigma_1;
+  real sigma_2;
+  
+  //real<lower=0> sd_1;
+  //real<lower=0> sd_2;
+  
 }
 
 transformed parameters{
@@ -72,34 +78,49 @@ transformed parameters{
   vector[N] y_hat_P1;
   vector[N] y_hat_P2;
   
+  vector[N] norm;
+  
   for (i in 1:N) {
     y_hat_P1[i] <- alpha[ll[i], 1] + 
       row(covar, i) * col(beta[ll[i]], 1) +
       row(covar_sq, i) * col(beta_sq[ll[i]], 1) +
       x_m2' * col(theta_m2[ll[i]], 1) +
       x_m1' * col(theta_m1[ll[i]], 1) +
-      x_intra' * col(theta_intra[ll[i]], 1);
+      x_intra' * col(theta_intra[ll[i]], 1) + 
+      sigma_1;
     
     y_hat_P2[i] <- alpha[ll[i], 2] + 
       row(covar, i) * col(beta[ll[i]], 2) +
       row(covar_sq, i) * col(beta_sq[ll[i]], 2) +
       x_m2' * col(theta_m2[ll[i]], 2) +
       x_m1' * col(theta_m1[ll[i]], 2) +
-      x_intra' * col(theta_intra[ll[i]], 2);
+      x_intra' * col(theta_intra[ll[i]], 2) +
+      sigma_2;
   }
       
   for (n in 1:N)
     for (t in 1:2)
       epsilon[n,t] <- y[n,t] - append_col(y_hat_P1, y_hat_P2)[n,t]; //error for each forcast
     
-    //abs??
-    weighted_err <- epsilon .* rep_matrix(weights, 2);
+  norm <- weights ./ (sum(weights)/rows(weights));
+  //abs??
+  weighted_err <- epsilon .* rep_matrix(norm, 2);
     
 }
 
 model {
 
   // priors
+  
+  //sd_1 ~ normal(0,2.5) T[0,];
+  //sd_2 ~ cauchy(0,2.5) T[0,];
+  
+  //sigma_1 ~ normal(0,sd_1);
+  //sigma_2 ~ normal(0,.1);
+  
+  //real sigma;
+  //sigma ~ cauchy(0,2.5);
+  
   
   for(d in 1:D)
     for(i in 1:2) {
@@ -114,6 +135,8 @@ model {
       col(beta_sq[d],i) ~ normal(0,2);
     }
   
-  increment_log_prob(-sum(weighted_err));
+  //increment_log_prob(-sum(weighted_err));
+  for(i in 1:2)
+    col(weighted_err,i) ~ normal(0,2);
   
 }

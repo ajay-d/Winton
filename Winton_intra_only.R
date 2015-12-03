@@ -275,4 +275,4 @@ fit <- stan('stan_intra_2beta_1level.stan',
 
 print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("theta", 'sigma', 'epsilon'), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("alpha", "theta"))
+traceplot(fit, pars=c("alpha", "weighted_err"))

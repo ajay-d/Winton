@@ -97,7 +97,10 @@ model {
     }
 
   //increment_log_prob(-sum(weighted_err));
-  for(i in 1:60)
-    col(weighted_err,i) ~ normal(0,2);
+  //for(i in 1:2)
+    //col(weighted_err,i) ~ normal(0,2);
+  
+  for (n in 1:N)
+    weighted_err[n] ~ normal(0,2);
   
 }

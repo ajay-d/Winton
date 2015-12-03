@@ -279,6 +279,7 @@ fit <- stan('stan_inter_2beta.stan',
             thin=2, chains=4, seed=252014,
             data = dat)
 
-print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("theta", 'sigma', 'epsilon'), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("alpha", "theta"))
+print(fit, pars=c("alpha", "beta"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("weighted_err"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
+traceplot(fit, pars=c("sigma_1", "sigma_2"))

@@ -60,9 +60,13 @@ parameters {
   
   //Thetas for all prior returns, and combined returns
   //2 for the two forecast days
-  matrix [Q, 2] theta_m2[D];
-  matrix [Q, 2] theta_m1[D];
-  matrix [Q, 2] theta_intra[D];
+  //matrix [Q, 2] theta_m2[D];
+  //matrix [Q, 2] theta_m1[D];
+  //matrix [Q, 2] theta_intra[D];
+  
+  real theta_m2[D, 2];
+  real theta_m1[D, 2];
+  real theta_intra[D, 2];
   
   real sigma_1;
   real sigma_2;
@@ -86,17 +90,17 @@ transformed parameters{
     y_hat_P1[i] <- alpha[ll[i], 1] + 
       row(covar, i) * col(beta[ll[i]], 1) +
       row(covar_sq, i) * col(beta_sq[ll[i]], 1) +
-      x_m2' * col(theta_m2[ll[i]], 1) +
-      x_m1' * col(theta_m1[ll[i]], 1) +
-      x_intra' * col(theta_intra[ll[i]], 1) + 
+      x_m2[i] * theta_m2[ll[i], 1] +
+      x_m1[i] * theta_m1[ll[i], 1] +
+      x_intra[i] * theta_intra[ll[i], 1] + 
       sigma_1;
     
     y_hat_P2[i] <- alpha[ll[i], 2] + 
       row(covar, i) * col(beta[ll[i]], 2) +
       row(covar_sq, i) * col(beta_sq[ll[i]], 2) +
-      x_m2' * col(theta_m2[ll[i]], 2) +
-      x_m1' * col(theta_m1[ll[i]], 2) +
-      x_intra' * col(theta_intra[ll[i]], 2) +
+      x_m2[i] * theta_m2[ll[i], 2] +
+      x_m1[i] * theta_m1[ll[i], 2] +
+      x_intra[i] * theta_intra[ll[i], 2] + 
       sigma_2;
   }
       
@@ -128,17 +132,23 @@ model {
     for(i in 1:2) {
       
       alpha[d,i] ~ normal(0,2);
+      theta_m2[d,i] ~ normal(0,2);
+      theta_m1[d,i] ~ normal(0,2);
+      theta_intra[d,i] ~ normal(0,2);
       
-      col(theta_m2[d],i) ~ normal(0,2);
-      col(theta_m1[d],i) ~ normal(0,2);
-      col(theta_intra[d],i) ~ normal(0,2);
+      //col(theta_m2[d],i) ~ normal(0,2);
+      //col(theta_m1[d],i) ~ normal(0,2);
+      //col(theta_intra[d],i) ~ normal(0,2);
       
       col(beta[d],i) ~ normal(0,2);
       col(beta_sq[d],i) ~ normal(0,2);
     }
   
   //increment_log_prob(-sum(weighted_err));
-  for(i in 1:2)
-    col(weighted_err,i) ~ normal(0,2);
+  //for(i in 1:2)
+    //col(weighted_err,i) ~ normal(0,2);
+  
+  for (n in 1:N)
+    weighted_err[n] ~ normal(0,2);
   
 }

@@ -40,8 +40,8 @@ parameters {
   real alpha[D,2];
   
   //regression
-  vector[25] beta[D,2];
-  vector[25] beta_sq[D,2];
+  //simplex[25] beta[D,2];
+  //simplex[25] beta_sq[D,2];
   
   //moving average
   //vector[3] theta[D,2];
@@ -80,13 +80,13 @@ model {
       alpha[d,i] ~ normal(0,2);
       theta[d,i] ~ normal(0,2);
       
-      beta[d,i] ~ normal(0,2);
-      beta_sq[d,i] ~ normal(0,2);
+      //beta[d,i] ~ normal(0,2);
+      //beta_sq[d,i] ~ normal(0,2);
     }
   
   //sigma ~ cauchy(0,5);
-  sigma_1 ~ normal(0,5);
-  sigma_2 ~ normal(0,5);
+  sigma_1 ~ normal(0,5)T[0,];
+  sigma_2 ~ normal(0,5)T[0,];
   
   // likelihood
   for(i in 1:N) {

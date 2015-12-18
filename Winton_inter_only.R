@@ -272,33 +272,28 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'weights' = train.sample$Weight_Daily
 )
 
-fit <- stan("stan_inter_0beta_simplex.stan",
+fit <- stan("stan_inter_1beta_simplex.stan",
             model_name = "Stan_inter", 
             iter=3000, warmup=2000,
             thin=2, chains=3, seed=252014,
             data = dat)
 
-print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("theta", "sigma"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("beta"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("beta_sq"), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("sigma", 'theta'))
-traceplot(fit, pars=c("alpha"))
-
-traceplot(fit, pars=c("beta[1,1,1]"))
-traceplot(fit, pars=c("beta[8,1,8]"))
-
-plot(fit, pars=c("sigma", 'theta', 'alpha'))
-plot(fit, pars=c("beta"))
+#traceplot(fit, pars=c("beta[1,1,1]"))
+#traceplot(fit, pars=c("beta[8,1,8]"))
 
 get_elapsed_time(fit)
 get_seeds(fit)
 
-print(fit, pars=c("theta", "sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("beta"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("beta_sq"), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("sigma_1", "sigma_2"))
-traceplot(fit, pars=c('theta'))
-traceplot(fit, pars=c('alpha'))
 
-save(fit, file='Stan_inter_0beta.RData')
+traceplot(fit, pars=c("sigma_1", 'sigma_2'))
+traceplot(fit, pars=c("alpha"))
+traceplot(fit, pars=c("beta"))
+
+plot(fit, pars=c("sigma_1", 'sigma_2'))
+plot(fit, pars=c("alpha"))
+plot(fit, pars=c("beta"))
+
+save(fit, file='Stan_inter_1beta.RData')

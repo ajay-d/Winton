@@ -209,8 +209,7 @@ features_new <- test.imp %>%
 train.sample <- train.imp %>%
   replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
                   Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
-                  Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
-  sample_n(5000)
+                  Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0))
 
 intra.ret <- train.sample %>%
   select(Ret_2:Ret_120) %>%
@@ -274,6 +273,12 @@ fit <- stan('stan_intra_0beta_simplex.stan',
             iter=1000, warmup=500,
             thin=2, chains=3, seed=252014,
             data = dat)
+
+#traceplot(fit, pars=c("beta[1,1,1]"))
+#traceplot(fit, pars=c("beta[8,1,8]"))
+
+get_elapsed_time(fit)
+get_seeds(fit)
 
 print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))

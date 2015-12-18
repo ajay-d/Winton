@@ -45,8 +45,8 @@ parameters {
   real alpha[D,60];
   
   //regression
-  simplex[25] beta[D,2];
-  //simplex[25] beta_sq[D,2];
+  simplex[25] beta[D,60];
+  //simplex[25] beta_sq[D,60];
   
   //moving average
   //vector[3] theta[D,2];

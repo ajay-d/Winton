@@ -19,6 +19,8 @@ test.full <- read_csv("data/test.csv.zip")
 
 names(train.full)
 
+setdiff(names(train.full), names(test.full))
+
 features <- train.full %>%
   select(matches("Feature"))
 
@@ -251,10 +253,10 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'D' = length(sort(unique(train.sample$level_8))), #number of stratification levels
             'T' = dim(intra.ret)[[2]], #time periods we have returns for
             
-            'Q' = 3, #number of lags for MA
+            'Q' = 3, #number of lags for MA (1 to 119)
             'y' = y, #training 
             
-            #'ll' = train.sample$level_8, #level indicator
+            'll' = train.sample$level_8, #level indicator
             'covar' = features,
             'x_intra' = intra.ret,
             
@@ -267,12 +269,22 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'weights' = train.sample$Weight_Intraday
             )
 
-fit <- stan('stan_intra_2beta_1level.stan',
+fit <- stan('stan_intra_0beta_simplex.stan',
             model_name = "Stan_intra", 
-            iter=3000, warmup=2000,
-            thin=2, chains=4, seed=252014,
+            iter=1000, warmup=500,
+            thin=2, chains=3, seed=252014,
             data = dat)
 
-print(fit, pars=c("alpha", "beta", 'mu'), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("theta", 'sigma', 'epsilon'), probs=c(0.5, 0.75, 0.95))
-traceplot(fit, pars=c("alpha", "weighted_err"))
+print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("beta"), probs=c(0.5, 0.75, 0.95))
+
+traceplot(fit, pars=c("sigma_1", 'sigma_2'))
+traceplot(fit, pars=c("alpha"))
+traceplot(fit, pars=c("beta"))
+
+plot(fit, pars=c("sigma_1", 'sigma_2'))
+plot(fit, pars=c("alpha"))
+plot(fit, pars=c("beta"))
+
+save(fit, file='Stan_intra_0beta_3Q.RData')

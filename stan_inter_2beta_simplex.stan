@@ -40,8 +40,8 @@ parameters {
   real alpha[D,2];
   
   //regression
-  //simplex[25] beta[D,2];
-  //simplex[25] beta_sq[D,2];
+  simplex[25] beta[D,2];
+  simplex[25] beta_sq[D,2];
   
   //moving average
   //vector[3] theta[D,2];
@@ -59,13 +59,13 @@ model {
   
   for (n in 1:N) {
     y_hat[n,1] <- alpha[ll[n], 1] + 
-                  //covar[n] * beta[ll[n], 1] + 
-                  //covar_sq[n] * beta_sq[ll[n], 1] + 
+                  covar[n] * beta[ll[n], 1] + 
+                  covar_sq[n] * beta_sq[ll[n], 1] + 
                   x[n] * theta[ll[n], 1];
                   
     y_hat[n,2] <- alpha[ll[n], 2] + 
-                  //covar[n] * beta[ll[n], 2] + 
-                  //covar_sq[n] * beta_sq[ll[n], 2] + 
+                  covar[n] * beta[ll[n], 2] + 
+                  covar_sq[n] * beta_sq[ll[n], 2] + 
                   x[n] * theta[ll[n], 2];
     
     epsilon[n,1] <- y[n,1] - y_hat[n,1];
@@ -80,13 +80,13 @@ model {
       alpha[d,i] ~ normal(0,2);
       theta[d,i] ~ normal(0,2);
       
-      //beta[d,i] ~ normal(0,2);
-      //beta_sq[d,i] ~ normal(0,2);
+      beta[d,i] ~ normal(0,2);
+      beta_sq[d,i] ~ normal(0,2);
     }
   
   //sigma ~ cauchy(0,5);
-  sigma_1 ~ normal(0,5)T[0,];
-  sigma_2 ~ normal(0,5)T[0,];
+  sigma_1 ~ normal(0,1)T[0,];
+  sigma_2 ~ normal(0,1)T[0,];
   
   // likelihood
   for(i in 1:N) {

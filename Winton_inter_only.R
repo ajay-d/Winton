@@ -207,8 +207,7 @@ features_new <- test.imp %>%
 train.sample <- train.imp %>%
   replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
                   Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
-                  Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
-  sample_n(5000)
+                  Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0))
 
 intra.ret <- train.sample %>%
   select(Ret_2:Ret_120) %>%
@@ -273,10 +272,10 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'weights' = train.sample$Weight_Daily
 )
 
-fit <- stan("stan_inter_2beta_simple3.stan",
+fit <- stan("stan_inter_0beta_simplex.stan",
             model_name = "Stan_inter", 
             iter=3000, warmup=2000,
-            thin=2, chains=4, seed=252014,
+            thin=2, chains=3, seed=252014,
             data = dat)
 
 print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))
@@ -284,7 +283,10 @@ print(fit, pars=c("theta", "sigma"), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("beta"), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("beta_sq"), probs=c(0.5, 0.75, 0.95))
 traceplot(fit, pars=c("sigma", 'theta'))
-traceplot(fit, pars=c("alpha", 'beta'))
+traceplot(fit, pars=c("alpha"))
+
+traceplot(fit, pars=c("beta[1,1,1]"))
+traceplot(fit, pars=c("beta[8,1,8]"))
 
 plot(fit, pars=c("sigma", 'theta', 'alpha'))
 plot(fit, pars=c("beta"))
@@ -299,4 +301,4 @@ traceplot(fit, pars=c("sigma_1", "sigma_2"))
 traceplot(fit, pars=c('theta'))
 traceplot(fit, pars=c('alpha'))
 
-save(fit, file='Stan_inter.RData')
+save(fit, file='Stan_inter_0beta.RData')

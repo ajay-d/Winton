@@ -81,8 +81,8 @@ model {
       alpha[d,j] ~ normal(0,2);
       theta[d,j] ~ normal(0,2);
       
-      beta[d,i] ~ normal(0,2);
-      //beta_sq[d,i] ~ normal(0,2);
+      beta[d,j] ~ normal(0,2);
+      //beta_sq[d,j] ~ normal(0,2);
     }
   
   //sigma ~ cauchy(0,5);

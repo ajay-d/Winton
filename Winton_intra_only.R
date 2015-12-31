@@ -268,9 +268,9 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'weights' = train.sample$Weight_Intraday
             )
 
-fit <- stan('stan_intra_0beta_simplex.stan',
+fit <- stan('stan_intra_0beta_vector.stan',
             model_name = "Stan_intra", 
-            iter=1000, warmup=500,
+            iter=500, warmup=250,
             thin=2, chains=3, seed=252014,
             data = dat)
 
@@ -292,4 +292,4 @@ plot(fit, pars=c("sigma_1", 'sigma_2'))
 plot(fit, pars=c("alpha"))
 plot(fit, pars=c("beta"))
 
-save(fit, file='Stan_intra_0beta_3Q.RData')
+save(fit, file='Stan_intra_0beta_3Q_500.RData')

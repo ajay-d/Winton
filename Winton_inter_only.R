@@ -58,7 +58,8 @@ n.returns <- apply(!is.na(intra.ret), 1, sum)
 
 df <- data_frame(total.gr.intra = prod,
                  n.returns.intra = n.returns) %>%
-  mutate(return.intra = total.gr.intra^(1/n.returns)-1)
+  mutate(return.intra = total.gr.intra^(1/n.returns)-1) %>%
+  mutate(return.intra.day = (return.intra+1)^420-1)
 
 train.imp <- cbind(train.imp, df) %>%
   #8 level: +++, ---, ++-, --+, -++, +--, +-+, -+-
@@ -98,6 +99,15 @@ train.imp <- cbind(train.imp, df) %>%
 table(train.imp$level_2, useNA = 'ifany')
 table(train.imp$level_4, useNA = 'ifany')
 table(train.imp$level_8, useNA = 'ifany')
+
+summary(train.imp$Ret_MinusTwo)
+summary(train.imp$Ret_MinusOne)
+
+summary(train.imp$Ret_2)
+summary(train.imp$Ret_119)
+
+summary(train.imp$return.intra)
+summary(train.imp$return.intra.day)
 
 plot(density(rnorm(1000,0,2)))
 plot(density(rt(1000,2)))
@@ -259,7 +269,7 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'covar' = features,
             "x_m2" = train.sample$Ret_MinusTwo,
             "x_m1" = train.sample$Ret_MinusOne,
-            "x_intra" = train.sample$return.intra,
+            "x_intra" = train.sample$return.intra.day,
             
             'N_new' = 60000,
             
@@ -272,7 +282,7 @@ dat <- list('N' = dim(train.sample)[[1]], #number of obs
             'weights' = train.sample$Weight_Daily
 )
 
-fit <- stan("stan_inter_1beta_simplex.stan",
+fit <- stan("stan_inter_1beta_vector_optim_tight.stan",
             model_name = "Stan_inter", 
             iter=3000, warmup=2000,
             thin=2, chains=3, seed=252014,
@@ -280,20 +290,23 @@ fit <- stan("stan_inter_1beta_simplex.stan",
 
 #traceplot(fit, pars=c("beta[1,1,1]"))
 #traceplot(fit, pars=c("beta[8,1,8]"))
+#traceplot(fit, pars=c("theta[1,1,1]"))
 
 get_elapsed_time(fit)
 get_seeds(fit)
 
-print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
+#print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))
 print(fit, pars=c("beta"), probs=c(0.5, 0.75, 0.95))
+print(fit, pars=c("theta"), probs=c(0.5, 0.75, 0.95))
 
-traceplot(fit, pars=c("sigma_1", 'sigma_2'))
+#traceplot(fit, pars=c("sigma_1", 'sigma_2'))
 traceplot(fit, pars=c("alpha"))
 traceplot(fit, pars=c("beta"))
+traceplot(fit, pars=c("theta"))
 
-plot(fit, pars=c("sigma_1", 'sigma_2'))
+#plot(fit, pars=c("sigma_1", 'sigma_2'))
 plot(fit, pars=c("alpha"))
 plot(fit, pars=c("beta"))
 
-save(fit, file='Stan_inter_1beta.RData')
+save(fit, file='Stan_inter_1beta_vector_tight.RData')

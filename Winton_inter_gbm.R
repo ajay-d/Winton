@@ -3,10 +3,10 @@ rm(list=ls(all=TRUE))
 library(readr)
 library(dplyr)
 library(tidyr)
-library(rstan)
+library(Matrix)
 library(ggplot2)
+library(xgboost)
 
-rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores(),
         stringsAsFactors = FALSE,
         scipen = 10) 
@@ -15,7 +15,8 @@ options(mc.cores = parallel::detectCores(),
 `%||%` <- function(a, b) ifelse(!is.na(a), a, b)
 
 train.full <- read_csv("data/train.csv.zip")
-test.full <- read_csv("data/test.csv.zip")
+test.full <- read_csv("data/test_2.csv.zip")
+sample.submission <- read_csv("data/sample_submission_2.csv.zip")
 
 names(train.full)
 
@@ -147,7 +148,8 @@ n.returns <- apply(!is.na(intra.ret), 1, sum)
 
 df <- data_frame(total.gr.intra = prod,
                  n.returns.intra = n.returns) %>%
-  mutate(return.intra = total.gr.intra^(1/n.returns)-1)
+  mutate(return.intra = total.gr.intra^(1/n.returns)-1) %>%
+  mutate(return.intra.day = (return.intra+1)^420-1)
 
 test.imp <- cbind(test.imp, df) %>%
   #8 level: +++, ---, ++-, --+, -++, +--, +-+, -+-
@@ -204,13 +206,19 @@ tail(test.imp[ind[,1],'return.intra'])
 
 sum(is.na(x_intra_new))
 
-features_new <- test.imp %>%
-  select(matches("Feature")) %>%
+# features_new <- test.imp %>%
+#   select(matches("Feature")) %>%
+#   replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
+#                   Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
+#                   Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
+#   as.matrix()
+
+test.data <- test.imp %>%
   replace_na(list(Feature_1=0,Feature_2=0,Feature_3=0,Feature_4=0,Feature_5=0,Feature_6=0,Feature_7=0,Feature_8=0,Feature_9=0,Feature_10=0,
                   Feature_11=0,Feature_12=0,Feature_13=0,Feature_14=0,Feature_15=0,Feature_16=0,Feature_17=0,Feature_18=0,Feature_19=0,Feature_20=0,
                   Feature_21=0,Feature_22=0,Feature_23=0,Feature_24=0,Feature_25=0)) %>%
+  select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8) %>%
   as.matrix()
-
 
 #################################################################################
 #' Sample Training data
@@ -225,25 +233,18 @@ intra.ret <- train.sample %>%
 
 dim(intra.ret)
 
-# for(i in 1:nrow(intra.ret)) {
-#   for(j in 1:ncol(intra.ret)) {
-#       if(is.na(intra.ret[i,j]))
-#         intra.ret[i,j] <- train.sample[[i,'return.intra']]
-#     }
-#   }
-
-#intra.ret[is.na(intra.ret)] <- 0
-
 ind <- which(is.na(intra.ret), arr.ind=TRUE)
 intra.ret[ind] <- train.sample[ind[,1],'return.intra']
 
 sum(is.na(intra.ret))
 
-features <- train.sample %>%
-  select(matches("Feature")) %>%
-  as.matrix()
+intra.names <- train.imp %>%
+  select(Ret_2:Ret_120) %>%
+  names
 
-setdiff(names(train.imp), names(test.full))
+x_intra <- intra.ret %>%
+  as.data.frame() %>%
+  setNames(intra.names)
 
 y <- train.sample %>%
   select(Ret_PlusOne:Ret_PlusTwo) %>%
@@ -251,62 +252,101 @@ y <- train.sample %>%
 
 dim(y)
 
-ggplot(train.sample) + geom_histogram(aes(Weight_Intraday))
-ggplot(train.sample) + geom_histogram(aes(x=Weight_Intraday, fill=as.factor(level_8)))
+train.data <- train.sample %>%
+  select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8) %>%
+  as.matrix()
 
-ggplot(train.sample) + geom_histogram(aes(Weight_Daily))
+setdiff(names(train.imp), names(test.full))
 
-norm.weights <- train.sample$Weight_Daily / (sum(train.sample$Weight_Daily) / length(train.sample$Weight_Daily))
-summary(norm.weights)
-##########
+oos.test <- train.sample %>%
+  select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8, Ret_PlusOne:Ret_PlusTwo) %>%
+  sample_frac(.5)
 
-dat <- list('N' = dim(train.sample)[[1]], #number of obs
-            'D' = length(sort(unique(train.sample$level_8))), #number of stratification levels
-            
-            'y' = y, #training
-            
-            'll' = train.sample$level_8, #level indicator
-            'covar' = features,
-            "x_m2" = train.sample$Ret_MinusTwo,
-            "x_m1" = train.sample$Ret_MinusOne,
-            "x_intra" = train.sample$return.intra.day,
-            
-            'N_new' = 60000,
-            
-            #'ll_new' = test.imp$level_8, #level of new obs
-            #'covar_new' = features_new,
-            #'x_m2_new' = test.imp$Ret_MinusTwo,
-            #'x_m1_new' = test.imp$Ret_MinusOne,
-            #"x_intra_new" = test.imp$return.intra,
-            
-            'weights' = train.sample$Weight_Daily
-)
+oos.test.y <- oos.test %>%
+  select(Ret_PlusOne, Ret_PlusTwo) %>%
+  as.matrix
 
-fit <- stan("stan_inter_1beta_simplex_abs2_noalpha.stan",
-            model_name = "Stan_inter", 
-            iter=5000, warmup=3000,
-            thin=2, chains=3, seed=252014,
-            data = dat)
+oos.test <- oos.test %>%
+  select(-Ret_PlusOne, -Ret_PlusTwo) %>%
+  as.matrix
 
-#traceplot(fit, pars=c("beta[1,1,1]"))
-#traceplot(fit, pars=c("beta[8,1,8]"))
-#traceplot(fit, pars=c("theta[1,1,1]"))
+dtrain <- xgb.DMatrix(data = train.data, label = y[,1])
+#dtest <- xgb.DMatrix(data = train.data.watch, label = train.data.watch.y)
 
-get_elapsed_time(fit)
-get_seeds(fit)
+reg.1 <- xgb.train(data=dtrain, max.depth=10, eta=.05, nround=200, 
+                   eval.metric = "rmse",
+                   nthread = 8, objective = "reg:linear")
 
-#print(fit, pars=c("sigma_1", "sigma_2"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("alpha"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("beta"), probs=c(0.5, 0.75, 0.95))
-print(fit, pars=c("theta"), probs=c(0.5, 0.75, 0.95))
+#not much
+reg.2 <- xgb.train(data=dtrain, max.depth=20, eta=.05, nround=500, 
+                   #booster = "gblinear",
+                   eval.metric = "rmse",
+                   nthread = 8, objective = "reg:linear")
 
-#traceplot(fit, pars=c("sigma_1", 'sigma_2'))
-traceplot(fit, pars=c("alpha"))
-traceplot(fit, pars=c("beta"))
-traceplot(fit, pars=c("theta"))
+reg.2 <- xgb.train(data=dtrain, max.depth=20, eta=.5, nround=200, 
+                   eval.metric = "merror", eval.metric = "mlogloss",
+                   nthread = 8, objective = "reg:linear")
 
-#plot(fit, pars=c("sigma_1", 'sigma_2'))
-plot(fit, pars=c("alpha"))
-plot(fit, pars=c("beta"))
+reg.3 <- xgb.train(data=dtrain, max.depth=20, nround=500, 
+                   eval.metric = "rmse",  eval.metric = "mlogloss",
+                   nthread = 8, objective = "reg:linear")
 
-save(fit, file='Stan_inter_1beta_simplex_abs2_noalpha.RData')
+reg.3 <- xgb.train(data=dtrain, max.depth=20, nround=500, 
+                   eval.metric = "rmse",
+                   nthread = 8, objective = "reg:linear")
+
+pred <- predict(reg.3, oos.test)
+pred <- predict(reg.2, oos.test)
+
+pred.test.1 <- predict(reg.2, test.data)
+
+pred.1 <- pred %>%
+  cbind(oos.test.y[,1]) %>%
+  as.data.frame() %>%
+  setNames(c('pred', 'y')) %>%
+  mutate(error = pred-y)
+
+sum(abs(pred.1$error))
+
+dtrain <- xgb.DMatrix(data = train.data, label = y[,2])
+reg.2 <- xgb.train(data=dtrain, max.depth=20, eta=.5, nround=200, 
+                   eval.metric = "merror", eval.metric = "mlogloss",
+                   nthread = 8, objective = "reg:linear")
+
+pred <- predict(reg.2, oos.test)
+pred.test.2 <- predict(reg.2, test.data)
+
+pred.2 <- pred %>%
+  cbind(oos.test.y[,2]) %>%
+  as.data.frame() %>%
+  setNames(c('pred', 'y')) %>%
+  mutate(error = pred-y)
+
+sum(abs(pred.2$error))
+
+pred.test <- cbind(test.imp$Id, pred.test.1, pred.test.2) %>%
+  as.data.frame() %>%
+  setNames(c('Id','61','62'))
+
+summary(train.imp$Ret_MinusTwo)
+summary(train.imp$Ret_MinusOne)
+
+summary(pred.test$`62`)
+summary(pred.test$`61`)
+
+y.pred.inter <- pred.test %>%
+  gather(Id.y, Predicted, -Id) %>%
+  mutate(Id.merge = paste0(Id, "_", Id.y)) %>%
+  select(Id=Id.merge, Predicted.inter = Predicted) %>%
+  arrange(Id)
+
+submission <- sample.submission %>%
+  separate(Id, c('Id2', 'Day'), remove=FALSE, convert=TRUE) %>%
+  left_join(y.pred.inter, by=c('Id'='Id'))
+
+submission <- submission %>%
+  mutate(Predicted = ifelse(Day>60, Predicted.inter, 0)) %>%
+  select(Id, Predicted)
+
+file <- paste0("winton-inter_gbm", ".csv.gz")
+write.csv(submission, gzfile(file), row.names=FALSE)

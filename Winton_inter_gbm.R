@@ -233,6 +233,8 @@ intra.ret <- train.sample %>%
 
 dim(intra.ret)
 
+set.seed(12345)
+
 ind <- which(is.na(intra.ret), arr.ind=TRUE)
 intra.ret[ind] <- train.sample[ind[,1],'return.intra']
 
@@ -271,6 +273,8 @@ oos.test <- oos.test %>%
   as.matrix
 
 dtrain <- xgb.DMatrix(data = train.data, label = y[,1])
+setinfo(dtrain, 'weight', train.sample$Weight_Daily)
+
 #dtest <- xgb.DMatrix(data = train.data.watch, label = train.data.watch.y)
 
 reg.1 <- xgb.train(data=dtrain, max.depth=10, eta=.05, nround=200, 
@@ -294,6 +298,8 @@ reg.3 <- xgb.train(data=dtrain, max.depth=20, nround=500,
 reg.3 <- xgb.train(data=dtrain, max.depth=20, nround=500, 
                    eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
+
+pred <- predict(reg.1, oos.test)
 
 pred <- predict(reg.3, oos.test)
 pred <- predict(reg.2, oos.test)

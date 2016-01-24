@@ -233,8 +233,6 @@ intra.ret <- train.sample %>%
 
 dim(intra.ret)
 
-set.seed(12345)
-
 ind <- which(is.na(intra.ret), arr.ind=TRUE)
 intra.ret[ind] <- train.sample[ind[,1],'return.intra']
 
@@ -254,26 +252,50 @@ y <- train.sample %>%
 
 dim(y)
 
-train.data <- train.sample %>%
-  select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8) %>%
-  as.matrix()
+set.seed(12345)
+
+train.data.model <- train.sample %>%
+  select(Id, matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8, Ret_PlusOne:Ret_PlusTwo) %>%
+  sample_frac(.75) %>%
+  arrange(Id)
 
 setdiff(names(train.imp), names(test.full))
 
 oos.test <- train.sample %>%
-  select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8, Ret_PlusOne:Ret_PlusTwo) %>%
+  anti_join(train.data.model %>%
+              select(Id), by='Id') %>%
+  select(Id, matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8, Ret_PlusOne:Ret_PlusTwo) %>%
+  arrange(Id)
+
+train.data.watch <- train.data.model %>%
   sample_frac(.5)
 
+train.data.watch.y <- train.data.watch %>%
+  select(Ret_PlusOne:Ret_PlusTwo) %>%
+  as.matrix
+
+train.data.model <- train.data.model %>% 
+  anti_join(train.data.watch %>%
+              select(Id), by='Id') %>%
+  arrange(Id)
+
+train.data.model.y <- train.data.model %>%
+  select(Ret_PlusOne:Ret_PlusTwo) %>%
+  as.matrix
+
 oos.test.y <- oos.test %>%
-  select(Ret_PlusOne, Ret_PlusTwo) %>%
+  select(Ret_PlusOne:Ret_PlusTwo) %>%
   as.matrix
 
-oos.test <- oos.test %>%
-  select(-Ret_PlusOne, -Ret_PlusTwo) %>%
-  as.matrix
+train.data.model <- train.data.model %>% select(-Id) %>% as.matrix
+oos.test <- oos.test %>% select(-Id) %>% as.matrix
+train.data.watch <- train.data.watch %>% select(-Id) %>% as.matrix
 
-dtrain <- xgb.DMatrix(data = train.data, label = y[,1])
-setinfo(dtrain, 'weight', train.sample$Weight_Daily)
+dtrain <- xgb.DMatrix(data = train.data.model, label = train.data.model.y[,1])
+dtest <- xgb.DMatrix(data = train.data.watch, label = train.data.watch.y[,1])
+
+dtrain.all <- xgb.DMatrix(data = rbind(train.data.model, train.data.watch), 
+                          label = rbind(train.data.model.y[,1], train.data.watch.y[,1]))
 
 #dtest <- xgb.DMatrix(data = train.data.watch, label = train.data.watch.y)
 
@@ -281,36 +303,43 @@ reg.1 <- xgb.train(data=dtrain, max.depth=10, eta=.05, nround=200,
                    eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
 
-#not much
-reg.2 <- xgb.train(data=dtrain, max.depth=20, eta=.05, nround=500, 
-                   #booster = "gblinear",
+
+watchlist <- list(train=dtrain, test=dtest)
+##best
+reg.2 <- xgb.train(data=dtrain, max.depth=20, eta=.05, nround=200, 
+                   watchlist = watchlist,
                    eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
 
-reg.2 <- xgb.train(data=dtrain, max.depth=20, eta=.5, nround=200, 
-                   eval.metric = "merror", eval.metric = "mlogloss",
+reg.3 <- xgb.train(data=dtrain, max.depth=20, eta=.01, nround=500, 
+                   watchlist = watchlist,
+                   eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
 
-reg.3 <- xgb.train(data=dtrain, max.depth=20, nround=500, 
-                   eval.metric = "rmse",  eval.metric = "mlogloss",
+reg.4 <- xgb.train(data=dtrain, max.depth=50, eta=.01, nround=500, 
+                   watchlist = watchlist,
+                   eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
 
 reg.3 <- xgb.train(data=dtrain, max.depth=20, nround=500, 
                    eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
 
-pred <- predict(reg.1, oos.test)
+pred <- predict(reg.4, oos.test)
 
 pred <- predict(reg.3, oos.test)
-pred <- predict(reg.2, oos.test)
 
-pred.test.1 <- predict(reg.2, test.data)
+pred <- predict(reg.2, oos.test)
 
 pred.1 <- pred %>%
   cbind(oos.test.y[,1]) %>%
   as.data.frame() %>%
   setNames(c('pred', 'y')) %>%
   mutate(error = pred-y)
+
+sum(abs(pred.1$error))
+
+pred.test.1 <- predict(reg.2, test.data)
 
 sum(abs(pred.1$error))
 

@@ -50,7 +50,7 @@ parameters {
   
   //moving average
   //vector[3] theta[D,2];
-  simplex[Q] theta[D,60];
+  vector[Q] theta[D,60];
   
   real<lower=0> sigma_1;
   real<lower=0> sigma_2;

@@ -9,7 +9,6 @@ library(ggplot2)
 library(xgboost)
 library(ggplot2)
 
-rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores(),
         stringsAsFactors = FALSE,
         scipen = 10) 
@@ -188,10 +187,10 @@ train.data.model.y <- train.imp %>%
 dtrain.1 <- xgb.DMatrix(data = train.data.model, label = train.data.model.y[,1])
 dtrain.2 <- xgb.DMatrix(data = train.data.model, label = train.data.model.y[,2])
 
-reg.1 <- xgb.train(data=dtrain.1, max.depth=20, eta=.05, nround=400, 
+reg.1 <- xgb.train(data=dtrain.1, max.depth=20, eta=.05, nround=200, 
                    eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
-reg.2 <- xgb.train(data=dtrain.2, max.depth=20, eta=.05, nround=400, 
+reg.2 <- xgb.train(data=dtrain.2, max.depth=20, eta=.05, nround=200, 
                    eval.metric = "rmse",
                    nthread = 8, objective = "reg:linear")
 
@@ -224,17 +223,56 @@ submission <- sample.submission %>%
 
 submission <- submission %>%
   mutate(Predicted = ifelse(Day>60, Predicted.inter, 0)) %>%
-  mutate(Predicted = ifelse(Day<=60, intra.median, Predicted)) %>%
+  mutate(Predicted = ifelse(Day<=60, return.intra, Predicted)) %>%
   select(Id, Predicted)
 
-file <- paste0("winton-inter_gbm_400_median2", ".csv.gz")
+file <- paste0("winton-inter_gbm_200_mean1", ".csv.gz")
 write.csv(submission, gzfile(file), row.names=FALSE)
 
-sub.1 <- read.csv("winton-inter_gbm_400_median.csv.gz")
-sub.2 <- read.csv("winton-inter_gbm_400_median2.csv.gz")
+###########################
+#Blends
+
+sub.1 <- read.csv("winton-inter_gbm_400_median1.csv.gz")
+sub.2 <- read.csv("winton-inter_gbm_200_mean1.csv.gz")
 
 summary(sub.1$Predicted)
 summary(sub.2$Predicted)
 
-file <- paste0("winton-inter_gbm_400_median_blend1", ".csv.gz")
-write.csv(submission, gzfile(file), row.names=FALSE)
+blend <- sub.1 %>%
+  rename(Predicted.1=Predicted) %>%
+  inner_join(sub.2 %>% rename(Predicted.2=Predicted)) %>%
+  rowwise() %>%
+  mutate(Predicted=(mean(c(Predicted.1, Predicted.2))))
+
+blend <- blend %>% select(Id, Predicted)
+
+file <- paste0("winton-inter_gbm_blend1", ".csv.gz")
+write.csv(blend, gzfile(file), row.names=FALSE)
+
+blend <- sub.1 %>%
+  rename(Predicted.1=Predicted) %>%
+  inner_join(sub.2 %>% rename(Predicted.2=Predicted)) %>%
+  rowwise() %>%
+  mutate(avg=(mean(c(Predicted.1, Predicted.2))),
+         avg.0=(mean(c(Predicted.1, 0)))) %>%
+  separate(Id, c('Id2', 'Day'), remove=FALSE, convert=TRUE) %>%
+  mutate(Predicted = ifelse(Day>60, avg, Predicted.1))
+
+blend <- blend %>% select(Id, Predicted)
+
+file <- paste0("winton-inter_gbm_blend2", ".csv.gz")
+write.csv(blend, gzfile(file), row.names=FALSE)
+
+blend <- sub.1 %>%
+  rename(Predicted.1=Predicted) %>%
+  inner_join(sub.2 %>% rename(Predicted.2=Predicted)) %>%
+  rowwise() %>%
+  mutate(avg=(mean(c(Predicted.1, Predicted.2))),
+         avg.0=(mean(c(Predicted.1, 0)))) %>%
+  separate(Id, c('Id2', 'Day'), remove=FALSE, convert=TRUE) %>%
+  mutate(Predicted = ifelse(Day>60, avg, avg.0))
+
+blend <- blend %>% select(Id, Predicted)
+
+file <- paste0("winton-inter_gbm_blend2-0", ".csv.gz")
+write.csv(blend, gzfile(file), row.names=FALSE)

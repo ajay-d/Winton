@@ -165,7 +165,8 @@ train.imp <- train.imp %>%
   mutate(gr.day = ((1+Ret_MinusOne) * (1+Ret_MinusTwo) * (1+return.intra.day)),
          gr.day = gr.day^(1/3)-1)
 
-set.seed(12345)
+#set.seed(12345)
+set.seed(252014)
 
 test.data <- test.imp %>%
   select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8,
@@ -176,6 +177,9 @@ train.data.model <- train.imp %>%
   select(matches("Feature"), Ret_MinusTwo, Ret_MinusOne, total.gr.intra, n.returns.intra, return.intra, return.intra.day, level_8,
          intra.median, intra.mean, gr.day) %>%
   as.matrix
+
+train.data.model <- cbind(train.data.model, 0)
+test.data <- cbind(test.data, 0)
 
 train.data.model.y <- train.imp %>%
   select(Ret_PlusOne:Ret_PlusTwo) %>%
@@ -223,6 +227,14 @@ submission <- submission %>%
   mutate(Predicted = ifelse(Day<=60, intra.median, Predicted)) %>%
   select(Id, Predicted)
 
-file <- paste0("winton-inter_gbm_400_median", ".csv.gz")
+file <- paste0("winton-inter_gbm_400_median2", ".csv.gz")
 write.csv(submission, gzfile(file), row.names=FALSE)
 
+sub.1 <- read.csv("winton-inter_gbm_400_median.csv.gz")
+sub.2 <- read.csv("winton-inter_gbm_400_median2.csv.gz")
+
+summary(sub.1$Predicted)
+summary(sub.2$Predicted)
+
+file <- paste0("winton-inter_gbm_400_median_blend1", ".csv.gz")
+write.csv(submission, gzfile(file), row.names=FALSE)
